@@ -1,0 +1,14 @@
+<package>
+  <description brief="videre_camera">
+
+     videre_camera
+
+  </description>
+  <author>George</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/videre_camera</url>
+
+</package>
+
+

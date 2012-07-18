@@ -1,0 +1,9 @@
+<stack>
+  <description brief="lara_sensors">lara_sensors</description>
+  <author>Maintained by George</author>
+  <license>BSD</license>  
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/lara_sensors</url>
+  <depend stack="ros" />
+
+</stack>
