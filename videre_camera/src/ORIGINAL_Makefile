@@ -1,0 +1,36 @@
+########################################################################
+### Projeto Pioneer
+### Conteudo: Modulo das cameras.
+### Autor: Pedro Borges Costa
+### Atualizacoes: 
+###	- 11/08/2010: criacao
+########################################################################
+
+TARGET = main
+
+CC = g++
+CFLAGS = -Wall -O2 -g -DUNIX -DLINUX -D_REENTRANT -D_POSIX_TIMER $(shell pkg-config --cflags opencv)
+LDFLAGS =  -lrt -lm -lstdc++ -lpthread -lc -lsvs -lsvscalc -lsvscap $(shell pkg-config --libs opencv)
+#LDFLAGS =  -lrt -lm -lstdc++ -lpthread -lc -lsvs -lsvscalc -lsvscap -lfltk -lfltk_gl -lGLU -lGL  $(shell pkg-config --libs opencv)
+INCLUDES = /usr/local/lib/svs/src
+LIBDIR = /usr/local/lib/svs/bin
+OBJS =  ${TARGET}.o
+#SRCS =  ${TARGET}.cpp ../../time.cpp ../../camera.cpp
+SRCS =  ${TARGET}.cpp time.cpp camera.cpp tracking.cpp window.cpp kalmanfilter_u.cpp kalmanfilter_v.cpp kalmanfilter_r.cpp gdatalogger/gdatalogger.c gdatalogger/gmatlabdatafile.c gdatalogger/gqueue.c gmatrix/gmatrix.c gmatrix/gmatrix_linalg.c
+
+# Rules:
+all: clean ${TARGET}
+
+# The variable $@ has the value of the target.
+${TARGET}: clean_target
+	${CC} -I${INCLUDES} ${CFLAGS} ${SRCS} -o $@ ${LDFLAGS} -L${LIBDIR}
+
+clean: clean_all
+
+clean_all: clean_target
+
+clean_target:
+	rm ${TARGET} -f
+
+
+.PHONY: clean

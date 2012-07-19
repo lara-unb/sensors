@@ -15,24 +15,9 @@
 * [17/07/2012] Created
 */
 
-
-
-
-/*****************************************************************************
-*** Projeto Pioneer
-*** Conteudo: Modulo das cameras.
-*** Autor: G. A. Borges.
-*** Atualizacoes: 
-	- 01/05/2009: criacao
-*****************************************************************************/
-/*! \file camera.h 
-* \brief Arquivo cabeçalho da biblioteca camera. */
+/*
 #ifndef VIDERE_CAMERA_H
 #define VIDERE_CAMERA_H
-
-#ifdef __cplusplus
-// extern "C" {
-#endif 
 
 // Definicoes de uso externo:
 #define CAMERA_MAXSIZE_IMAGES_QUEUE	10
@@ -43,9 +28,6 @@ int camera_close(void);
 int camera_getimagepair(IplImage **ppleft, IplImage **ppright);
 void camera_printcvimageinfo(IplImage *pImCV);
 
-#ifdef __cplusplus
-//}
-#endif 
+#endif //VIDERE_CAMERA_H
 
-#endif //CAMERA_H
-
+*/

@@ -8,23 +8,73 @@
  * @attention Universidade de Brasília (UnB)
  */
 
+#include "ros/ros.h"
+#include "std_msgs/String.h"
+//#include <image_transport/image_transport.h>
 
-/*****************************************************************************
+int main(int argc, char **argv)
+{
+    ros::init(argc, argv, "talker");
+    //ros::init(argc, argv, "videre_camera");
+
+    ros::NodeHandle nh;
+
+    ros::Publisher chatter_pub = nh.advertise<std_msgs::String>("chatter", 1000);
+    //image_transport::ImageTransport it(nh);
+    //image_transport::Publisher pub = it.advertise("image_raw", 10);
+
+    ros::Rate loop_rate(10);
+
+    int count = 0;
+    while (ros::ok())
+    {
+        /**
+         * This is a message object. You stuff it with data, and then publish it.
+         */
+        std_msgs::String msg;
+
+        std::stringstream ss;
+        ss << "hello world " << count;
+        msg.data = ss.str();
+
+        ROS_INFO("%s", msg.data.c_str());
+
+        /**
+         * The publish() function is how you send messages. The parameter
+         * is the message object. The type of this object must agree with the type
+         * given as a template parameter to the advertise<>() call, as was done
+         * in the constructor above.
+         */
+        chatter_pub.publish(msg);
+
+        ros::spinOnce();
+
+        loop_rate.sleep();
+        ++count;
+    }
+
+
+    return 0;
+}
+
+
+/*
+****************************************************************************
 *** Projeto Pioneer
 *** Conteudo: Modulo das cameras.
 *** Autor: G. A. Borges.
 *** Atualizacoes: 
 	- 01/05/2009: criacao
-*****************************************************************************/
-/*! \file camera.cpp
-* \brief Arquivo com as funcoes da biblioteca camera. */
+****************************************************************************
+! \file camera.cpp
+* \brief Arquivo com as funcoes da biblioteca camera.
 
 // Cabecalhos des biblioteca padrao C:
 #include <stdio.h>
 #include <math.h>
 #include <sys/time.h>
-#include <unistd.h> /* for libc5 */
-#include <sys/io.h> /* for glibc */
+#include <unistd.h>  for libc5
+#include <sys/io.h>  for glibc
 #include <pthread.h>
 
 // Cabecalhos especificos do modulo:
@@ -62,16 +112,16 @@ pthread_mutex_t mutex_grabthreadsharedvariables = PTHREAD_MUTEX_INITIALIZER;
 int flaggrabthreadactive = false;
 int grabthreadperiod_ms;
 
-/*****************************************************************************
+****************************************************************************
 ******************************************************************************
 ** Funções de inicialização e encerramento
 ******************************************************************************
-*****************************************************************************/
-/*! \fn int camera_init(int grabperiod_ms, int imagewidth, int imageheight, int flagverbose)
+****************************************************************************
+! \fn int camera_init(int grabperiod_ms, int imagewidth, int imageheight, int flagverbose)
 * Funcao de inicializacao das cameras.
 * \param 
 * \return
-*/
+
 int camera_init(int grabperiod_ms, int imagewidth, int imageheight, double imagegamma, int flagverbose)
 {
 	int n;
@@ -101,11 +151,11 @@ int camera_init(int grabperiod_ms, int imagewidth, int imageheight, double image
 	return true;
 }
 
-/*! \fn int camera_close(void)
+! \fn int camera_close(void)
 * Funcao de encerramento do servidor das cameras.
 * \param 
 * \return
-*/
+
 int camera_close(void)
 {
 	int n;
@@ -130,16 +180,16 @@ int camera_close(void)
 	return true;
 }
 
-/*****************************************************************************
+****************************************************************************
 ******************************************************************************
 ** Funcoes de interface
 ******************************************************************************
-*****************************************************************************/
-/*! \fn int camera_getimagepair(IplImage **ppleft, IplImage **ppright)
+****************************************************************************
+! \fn int camera_getimagepair(IplImage **ppleft, IplImage **ppright)
 * Funcao que retorna o par de imagens mais atual.
 * \param 
 * \return
-*/
+
 int camera_getimagepair(IplImage **ppleft, IplImage **ppright)
 {
 	int flaggrabactive, imageindex;
@@ -163,11 +213,11 @@ int camera_getimagepair(IplImage **ppleft, IplImage **ppright)
 }
 
 
-/*****************************************************************************
+****************************************************************************
 ******************************************************************************
 ** Funcoes internas
 ******************************************************************************
-*****************************************************************************/
+****************************************************************************
 int camera_initcapturesystem(void)
 {
 	int n;
@@ -222,7 +272,6 @@ void camera_closecapturesystem(void)
 {
 	videoObject->Close();
 }
-
 
 void *camera_grabthread(void *ptr)
 {
@@ -315,7 +364,7 @@ void camera_svstocvimage(unsigned long *pImSVS, unsigned long Height, unsigned l
 	}
 }
 
-/*
+
 void camera_svstocvimage(unsigned long *pImSVS, unsigned long Height, unsigned long Width, IplImage *pImCV)
 {
 
@@ -333,7 +382,7 @@ void camera_svstocvimage(unsigned long *pImSVS, unsigned long Height, unsigned l
 		}
 	}
 }
-*/
+
 void camera_printcvimageinfo(IplImage *pImCV)
 {
 	printf("\n OpenCV Image Info:");
@@ -360,6 +409,5 @@ void camera_printsvsimageinfo(svsImageParams *pIp)
 	printf("\n    vergence = %f",pIp->vergence);
 	printf("\n    gamma = %f",pIp->gamma);
 }
-
-
-
+*/
+*/
