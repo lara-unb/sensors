@@ -28,5 +28,19 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 #rosbuild_link_boost(${PROJECT_NAME} thread)
 #rosbuild_add_executable(example examples/example.cpp)
 #target_link_libraries(example ${PROJECT_NAME})
-rosbuild_add_executable(talker src/talker.cpp)
-rosbuild_add_executable(listener src/listener.cpp)
+
+#rosbuild_add_executable(talker src/talker.cpp)
+#rosbuild_add_executable(listener src/listener.cpp)
+rosbuild_add_executable(videre_camera src/videre_camera.cpp)
+
+# Enable pkg-config in cmake
+include($ENV{ROS_ROOT}/core/rosbuild/FindPkgConfig.cmake)
+
+# Run pkg-config for OpenCV
+pkg_check_modules(OPENCV REQUIRED opencv)
+
+# Definitions from original Makefile
+add_definitions(-DUNIX -DLINUX -D_REENTRANT -D_POSIX_TIMER)
+include_directories(/usr/local/lib/svs/src ${OPENCV_INCLUDE_DIRS})
+link_directories(/usr/local/lib/svs/bin ${OPENCV_LIBRARY_DIRS})
+target_link_libraries(videre_camera m c rt pthread svs svscalc svscap ${OPENCV_LIBRARIES})

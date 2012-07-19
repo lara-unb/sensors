@@ -4,12 +4,10 @@
      videre_camera
 
   </description>
-  <author>George</author>
-  <license>BSD</license>
+  <author>George Brindeiro/georgebrindeiro@lara.unb.br</author>
+  <license>Undefined</license>
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/videre_camera</url>
   <depend package="roscpp"/>
 
 </package>
-
-

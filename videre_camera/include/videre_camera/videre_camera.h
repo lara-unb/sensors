@@ -15,7 +15,6 @@
 * [17/07/2012] Created
 */
 
-/*
 #ifndef VIDERE_CAMERA_H
 #define VIDERE_CAMERA_H
 
@@ -29,5 +28,3 @@ int camera_getimagepair(IplImage **ppleft, IplImage **ppright);
 void camera_printcvimageinfo(IplImage *pImCV);
 
 #endif //VIDERE_CAMERA_H
-
-*/
