@@ -22,6 +22,7 @@
 #include <cv.h>
 #include <cvaux.h>
 #include <cxcore.h>
+#include <highgui.h>
 
 //#include "main.h"
 #include "gtime.h"//#include "time.h"
@@ -61,6 +62,9 @@ int grabthreadperiod_ms;
 
 ///////////////////////////////////////////////// PATO STUFF
 
+#define LEFTWINDOW                      "LEFT"
+#define RIGHTWINDOW                     "RIGHT"
+
 #define IMAGEWIDTH                      320
 #define IMAGEHEIGHT                     240
 
@@ -70,7 +74,7 @@ int main(int argc, char **argv)
 {
 ///////////////////////////////////////////////// PATO STUFF
 
-    IplImage* pImageLeft, * pImageRight, *pImageLeft2;
+    IplImage* pImageLeft, * pImageRight;
 
 ///////////////////////////////////////////////// END PATO STUFF
 
@@ -84,6 +88,12 @@ int main(int argc, char **argv)
         return false;
     }
 
+    // Create CV windows
+    cvNamedWindow(LEFTWINDOW, CV_WINDOW_AUTOSIZE);
+    cvNamedWindow(RIGHTWINDOW, CV_WINDOW_AUTOSIZE);
+    cvMoveWindow(LEFTWINDOW, 0,0);
+    cvMoveWindow(RIGHTWINDOW, 330,0);
+
     //ros::Rate loop_rate(10);
 
     int count = 0;
@@ -95,13 +105,14 @@ int main(int argc, char **argv)
             printf("Error in camera_getimagepair, exiting program");
             break;
         }
-        else
-        {
-            pImageLeft2 = cvCloneImage(pImageLeft);
-        }
+
+        // Show image in window
+        cvShowImage(LEFTWINDOW, pImageLeft);
+        cvShowImage(RIGHTWINDOW, pImageRight);
 
         //ROS_INFO("Grabbed image #%d",count);
-        printf("Grabbed image #%d, count)");
+        printf("Grabbed image #%d\n", count);
+        cvWaitKey(100);
 
         // TO DO: Stuff image structure
 
@@ -112,6 +123,9 @@ int main(int argc, char **argv)
         //loop_rate.sleep();
         ++count;
     }
+
+    // Destroy CV windows
+    cvDestroyAllWindows();
 
     // Close SVS capture system
     camera_close();
