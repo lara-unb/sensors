@@ -21,6 +21,10 @@
 // Definicoes de uso externo:
 #define CAMERA_MAXSIZE_IMAGES_QUEUE	10
 
+void sigsegv_handler(int sig);
+void sigint_handler(int sig);
+void sigtstp_handler(int sig);
+
 // Prototipos de uso externo:
 int camera_init(int grabperiod_ms, int imagewidth, int imageheight, double imagegamma, int flagverbose);
 int camera_close(void);

@@ -58,6 +58,7 @@ int grabthreadperiod_ms;
 
 //#include <ros/ros.h>
 
+#include <signal.h>
 #include <videre_camera/videre_camera.h>
 
 ///////////////////////////////////////////////// PATO STUFF
@@ -77,6 +78,11 @@ int main(int argc, char **argv)
     IplImage* pImageLeft, * pImageRight;
 
 ///////////////////////////////////////////////// END PATO STUFF
+
+    // Set up segfault handlers
+    signal(SIGSEGV, &sigsegv_handler);
+    signal(SIGINT, &sigint_handler);
+    signal(SIGTSTP, &sigtstp_handler);
 
     // Start ROS node with unique identifier appended
     //ros::init(argc, argv, "videre_camera", ros::init_options::AnonymousName);
@@ -124,13 +130,43 @@ int main(int argc, char **argv)
         ++count;
     }
 
+    return 0;
+}
+
+void sigsegv_handler(int sig)
+{
+    signal(SIGSEGV, SIG_DFL);
+    printf("System segfaulted, stopping camera nicely\n");
+
     // Destroy CV windows
     cvDestroyAllWindows();
 
     // Close SVS capture system
     camera_close();
+}
 
-    return 0;
+void sigint_handler(int sig)
+{
+    signal(SIGINT, SIG_DFL);
+    printf("System interrupted, stopping camera nicely\n");
+
+    // Destroy CV windows
+    cvDestroyAllWindows();
+
+    // Close SVS capture system
+    camera_close();
+}
+
+void sigtstp_handler(int sig)
+{
+    signal(SIGTSTP, SIG_DFL);
+    printf("System stopped temporarily, stopping camera nicely\n");
+
+    // Destroy CV windows
+    cvDestroyAllWindows();
+
+    // Close SVS capture system
+    camera_close();
 }
 
 ///////////////////////////////////////////////// GEOVANY STUFF
