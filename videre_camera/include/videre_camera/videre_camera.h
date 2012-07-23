@@ -28,7 +28,8 @@ void sigtstp_handler(int sig);
 // Prototipos de uso externo:
 int camera_init(int grabperiod_ms, int imagewidth, int imageheight, double imagegamma, int flagverbose);
 int camera_close(void);
-int camera_getimagepair(IplImage **ppleft, IplImage **ppright);
+int camera_getimagepair(IplImage** pleft, IplImage** pright);
+//int camera_getimagepair_old(IplImage **ppleft, IplImage **ppright);
 void camera_printcvimageinfo(IplImage *pImCV);
 
 #endif //VIDERE_CAMERA_H
