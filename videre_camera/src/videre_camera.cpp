@@ -46,15 +46,7 @@ unsigned char GammaTable[256];
 double Gamma = 0.850;
 
 IplImage **ppImageRight, **ppImageLeft;
-int currentimageindex = 0;
 int camera_width = 0, camera_height = 0;
-int camera_flagverbose = false;
-
-pthread_t camera_grabthreadstructure;
-pthread_mutex_t mutex_grabthreadsharedvariables =
-PTHREAD_MUTEX_INITIALIZER;
-int flaggrabthreadactive = false;
-int grabthreadperiod_ms;
 
 ///////////////////////////////////////////////// END GEOVANY STUFF
 
