@@ -77,13 +77,6 @@ IplImage *pImageLeft, *pImageRight;
 
 int main(int argc, char **argv)
 {
-///////////////////////////////////////////////// PATO STUFF
-
-    pImageLeft = cvCreateImage(cvSize(camera_width,camera_height), IPL_DEPTH_8U, 3);
-    pImageRight = cvCreateImage(cvSize(camera_width,camera_height), IPL_DEPTH_8U, 3);
-
-///////////////////////////////////////////////// END PATO STUFF
-
     // Set up segfault handlers
     signal(SIGSEGV, &sigsegv_handler);
     signal(SIGINT, &sigint_handler);
@@ -98,6 +91,10 @@ int main(int argc, char **argv)
         printf("\n*** Error in camera_init function\n");
         return false;
     }
+
+    // Create CV images
+    pImageLeft = cvCreateImage(cvSize(camera_width,camera_height), IPL_DEPTH_8U, 3);
+    pImageRight = cvCreateImage(cvSize(camera_width,camera_height), IPL_DEPTH_8U, 3);
 
     // Create CV windows
     cvNamedWindow(LEFTWINDOW, CV_WINDOW_AUTOSIZE);
@@ -272,8 +269,7 @@ int camera_initcapturesystem(void)
 
     // Get the svsVideoImages object from the currently loaded camera interface
     videoObject = getVideoObject();
-    videoObject->ReadParams(
-            (char*) "calibration.ini");
+    videoObject->ReadParams((char*) "cfg/calibration.ini");
 
     // Open the stereo device
     bool ret;
