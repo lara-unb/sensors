@@ -70,7 +70,7 @@ bool VidereCamera::GetImagePair(IplImage** left_image, IplImage** right_image)
 
 void VidereCamera::Init()
 {
-    VC_LOG("Initializing Videre Camera");
+    VC_LOG(INFO,"Initializing Videre Camera");
 
     if(!gamma_table_initialized_)
         InitGammaTable();
