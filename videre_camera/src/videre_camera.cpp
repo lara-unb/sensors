@@ -25,7 +25,7 @@
 #include <highgui.h>
 
 //#include "main.h"
-#include "gtime.h"
+//#include "gtime.h"
 //#include "camera.h"
 #include "svsclass.h"
 
