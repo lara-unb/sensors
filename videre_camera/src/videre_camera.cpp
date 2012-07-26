@@ -1,361 +1,238 @@
 /**
- * @file	videre_camera.cpp
- * @author	George Andrew Brindeiro
- * @date	17/07/2012
+ * @file    videre_camera.cpp
+ * @author  George Andrew Brindeiro
+ * @date    25/07/2012
  *
  * @attention Copyright (C) 2012
  * @attention Laboratório de Automação e Robótica (LARA)
  * @attention Universidade de Brasília (UnB)
  */
 
-///////////////////////////////////////////////// GEOVANY STUFF
+#include <videre_camera/videre_camera.h>
+#include <videre_camera/videre_log.h>
 
-// Cabecalhos des biblioteca padrao C:
-#include <stdio.h>
-#include <math.h>
-#include <sys/time.h>
-#include <unistd.h>
-#include <sys/io.h>
-#include <pthread.h>
+// Standard C libraries
+#include <cstdio>
+#include <cmath>
 
-// Cabecalhos especificos do modulo:
+// SVS library
+#include <svsclass.h>
+
+// OpenCV library
 #include <cv.h>
-#include <cvaux.h>
 #include <cxcore.h>
 #include <highgui.h>
 
-//#include "main.h"
-//#include "gtime.h"
-//#include "camera.h"
-#include "svsclass.h"
+#define LEFTWINDOW "Left Camera"
+#define RIGHTWINDOW "Right Camera"
 
-// Definicoes internas:
+bool VidereCamera::gamma_table_initialized_ = false;
+unsigned char VidereCamera::gamma_table_[256];
 
-// Prototipos internos:
-int camera_initcapturesystem(void);
-void camera_closecapturesystem(void);
-void *camera_grabthread(void *ptr);
-void camera_svstocvimage(unsigned long *pImSVS, unsigned long Height,
-        unsigned long Width, IplImage *pImCV);
-void camera_printsvsimageinfo(svsImageParams *pIp);
-
-// Variaveis do módulo:
-svsVideoImages *videoObject = NULL;
-svsStereoImage *stereoImage;
-unsigned char GammaTable[256];
-double Gamma = 0.850;
-
-IplImage **ppImageRight, **ppImageLeft;
-int camera_width = 0, camera_height = 0;
-
-///////////////////////////////////////////////// END GEOVANY STUFF
-
-//#include <ros/ros.h>
-
-#include <signal.h>
-#include <videre_camera/videre_camera.h>
-
-///////////////////////////////////////////////// PATO STUFF
-
-#define LEFTWINDOW                      "LEFT"
-#define RIGHTWINDOW                     "RIGHT"
-
-#define IMAGEWIDTH                      320
-#define IMAGEHEIGHT                     240
-
-IplImage *pImageLeft, *pImageRight;
-
-///////////////////////////////////////////////// END PATO STUFF
-
-int main(int argc, char **argv)
+VidereCamera::~VidereCamera()
 {
-    // Set up segfault handlers
-    signal(SIGSEGV, &sigsegv_handler);
-    signal(SIGINT, &sigint_handler);
-    signal(SIGTSTP, &sigtstp_handler);
+    CloseCapture();
 
-    // Start ROS node with unique identifier appended
-    //ros::init(argc, argv, "videre_camera", ros::init_options::AnonymousName);
+    if(display_)
+        CloseDisplay();
+}
 
-    // Initialize SVS capture system
-    if(!camera_init(1, IMAGEWIDTH, IMAGEHEIGHT, 0.85, false))
+bool VidereCamera::GetImagePair(IplImage** left_image, IplImage** right_image)
+{
+    //VC_LOG(INFO,"Grabbing image pair");
+
+    stereo_image_ = video_object_->GetImage(timeout_);
+
+    if(stereo_image_ == NULL)
     {
-        printf("\n*** Error in camera_init function\n");
-        return false;
-    }
-
-    // Create CV images
-    pImageLeft = cvCreateImage(cvSize(camera_width,camera_height), IPL_DEPTH_8U, 3);
-    pImageRight = cvCreateImage(cvSize(camera_width,camera_height), IPL_DEPTH_8U, 3);
-
-    // Create CV windows
-    cvNamedWindow(LEFTWINDOW, CV_WINDOW_AUTOSIZE);
-    cvNamedWindow(RIGHTWINDOW, CV_WINDOW_AUTOSIZE);
-    cvMoveWindow(LEFTWINDOW, 0, 0);
-    cvMoveWindow(RIGHTWINDOW, 330, 0);
-
-    //ros::Rate loop_rate(10);
-
-    int count = 0;
-    while(1)//ros::ok())
-    {
-        // Grab image through SVS
-        if(!camera_getimagepair(&pImageLeft, &pImageRight))
-        {
-            printf("Error in camera_getimagepair, exiting program\n");
-            break;
-        }
-        else
-        {
-            // Show image in window
-            cvShowImage(LEFTWINDOW, pImageLeft);
-            cvShowImage(RIGHTWINDOW, pImageRight);
-
-            //ROS_INFO("Grabbed image #%d",count);
-            printf("\nGrabbed image #%d\n", count);
-            cvWaitKey(100);
-
-            // TO DO: Stuff image structure
-
-            // TO DO: Publish
-
-            //ros::spinOnce();
-
-            //loop_rate.sleep();
-            ++count;
-        }
-    }
-
-    return 0;
-}
-
-void sigsegv_handler(int sig)
-{
-    signal(SIGSEGV, SIG_DFL);
-    printf("System segfaulted, stopping camera nicely\n");
-
-    // Close SVS capture system
-    camera_close();
-
-    // Destroy CV windows
-    cvDestroyAllWindows();
-}
-
-void sigint_handler(int sig)
-{
-    signal(SIGINT, SIG_DFL);
-    printf("System interrupted, stopping camera nicely\n");
-
-    // Close SVS capture system
-    camera_close();
-
-    // Destroy CV windows
-    cvDestroyAllWindows();
-}
-
-void sigtstp_handler(int sig)
-{
-    signal(SIGTSTP, SIG_DFL);
-    printf("System stopped temporarily, stopping camera nicely\n");
-
-    // Close SVS capture system
-    camera_close();
-
-    // Destroy CV windows
-    cvDestroyAllWindows();
-}
-
-///////////////////////////////////////////////// GEOVANY STUFF
-
-/*****************************************************************************
- ******************************************************************************
- ** Funções de inicialização e encerramento
- ******************************************************************************
- *****************************************************************************/
-/*! \fn int camera_init(int grabperiod_ms, int imagewidth, int imageheight, int flagverbose)
- * Funcao de inicializacao das cameras.
- * \param
- * \return
- */
-int camera_init(int grabperiod_ms, int imagewidth, int imageheight,
-        double imagegamma, int flagverbose)
-{
-    camera_width = imagewidth;
-    camera_height = imageheight;
-    Gamma = imagegamma;
-
-    if(camera_initcapturesystem() == false)
-    {
-        return false;
-    }
-
-    return true;
-}
-
-/*! \fn int camera_close(void)
- * Funcao de encerramento do servidor das cameras.
- * \param
- * \return
- */
-int camera_close(void)
-{
-    // Encerrar sistema de captura
-    camera_closecapturesystem();
-
-    cvReleaseImage(&pImageLeft);
-    cvReleaseImage(&pImageRight);
-
-    return true;
-}
-
-/*****************************************************************************
- ******************************************************************************
- ** Funcoes de interface
- ******************************************************************************
- *****************************************************************************/
-/*! \fn int camera_getimagepair(IplImage **ppleft, IplImage **ppright)
- * Funcao que retorna o par de imagens mais atual.
- * \param
- * \return
- */
-int camera_getimagepair(IplImage** pleft, IplImage** pright)
-{
-    // Faz aquisicao de um par de imagens:
-    stereoImage = videoObject->GetImage(5000);
-    if(stereoImage == NULL)
-    {
-        printf("stereoImage == NULL");
+        VC_LOG(ERROR,"GetImagePair() failed");
         return false;
     }
     else
     {
-        camera_svstocvimage(stereoImage->Color(), camera_height, camera_width,
-                *pleft);
-        camera_svstocvimage(stereoImage->ColorRight(), camera_height,
-                camera_width, *pright);
+        unsigned long* svs_left_image = stereo_image_->Color();
+        unsigned long* svs_right_image = stereo_image_->ColorRight();
 
-        camera_printcvimageinfo(*pleft);
-        camera_printcvimageinfo(*pright);
+        SVStoCV(svs_left_image, cv_left_image_);
+        SVStoCV(svs_right_image, cv_right_image_);
+
+        if(display_)
+            DisplayImagePair();
+
+        *left_image = cv_left_image_;
+        *right_image = cv_right_image_;
+
+        //VC_LOG(INFO,"Image Count = %d", count_++);
 
         return true;
     }
 }
 
-/*****************************************************************************
- ******************************************************************************
- ** Funcoes internas
- ******************************************************************************
- *****************************************************************************/
-int camera_initcapturesystem(void)
+void VidereCamera::Init()
 {
-    int n;
+    VC_LOG(INFO,"Initializing Videre Camera");
 
-    for(n = 0; n < 256; n++)
+    if(!gamma_table_initialized_)
+        InitGammaTable();
+
+    InitCapture();
+
+    if(display_)
+        InitDisplay();
+}
+
+void VidereCamera::InitGammaTable()
+{
+    VC_LOG(INFO,"Initializing Gamma Table");
+
+    for(int ii = 0; ii < 256; ii++)
     {
-        GammaTable[n] = (unsigned char) (255.0
-                * (pow((double) n / 255.0, Gamma)));
+        gamma_table_[ii] = static_cast<unsigned char>(255.0*(pow(ii/255.0, gamma_)));
     }
+}
 
-    printf("\n\n*** Inicialização do módulo camera");
-    printf("\n*** Framegrabber: %s", svsVideoIdent);
+bool VidereCamera::InitCapture()
+{
+    VC_LOG(INFO,"Initializing Capture");
+    VC_LOG(INFO,"Framegrabber is %s", svsVideoIdent);
 
-    // Get the svsVideoImages object from the currently loaded camera interface
-    videoObject = getVideoObject();
-    videoObject->ReadParams((char*) "cfg/calibration.ini");
+    video_object_ = getVideoObject();
 
-    // Open the stereo device
-    bool ret;
-    ret = videoObject->Open();
-    if(!ret)
+    VC_LOG(INFO,"Opening video capture");
+
+    bool video_open = video_object_->Open();
+    if(!video_open)
     {
-        printf("\n*** Erro: o sistema de cameras nao pode ser iniciado.");
-        camera_closecapturesystem();
+        VC_LOG(ERROR,"video_object_->Open() failed");
+
+        CloseCapture();
         return false;
     }
 
-    printf("\n*** Sistema de cameras iniciado: %i cameras encontradas",
-            videoObject->Enumerate());
+    VC_LOG(INFO,"Found %i cameras", video_object_->Enumerate());
 
-    // Set camera parameters *after* opening the device
-    videoObject->SetColor(40, 40);
-    videoObject->SetSize(camera_width, camera_height);
-    videoObject->SetExposure(83, 100);
-    videoObject->SetBrightness(0, 30);
-    videoObject->SetRate(30);
+    VC_LOG(INFO,"Reading camera parameters from %s", "cfg/calibration.ini");
 
-    ret = videoObject->Start();
-    if(!ret)
+    video_object_->ReadParams((char*) "cfg/calibration.ini");
+
+    VC_LOG(INFO,"Setting camera parameters");
+
+    video_object_->SetColor(40, 40);
+    video_object_->SetSize(width_, height_);
+    video_object_->SetExposure(83, 100);
+    video_object_->SetBrightness(0, 30);
+    video_object_->SetRate(30);
+
+    VC_LOG(INFO,"Setting up image rectification");
+
+    bool video_rectified = video_object_->SetRect(true);
+    if(!video_rectified)
+        VC_LOG(ERROR,"video_object_->SetRect() failed");
+
+    VC_LOG(INFO,"Starting video capture");
+
+    bool video_started = video_object_->Start();
+    if(!video_started)
     {
-        printf(
-                "\n*** Erro: nao pode ser iniciada captura do sistema de cameras.");
-        camera_closecapturesystem();
+        VC_LOG(ERROR,"video_object_->Start() failed");
+
+        CloseCapture();
         return false;
-    }
-
-    // Set up acquisition to rectify the image
-    ret = videoObject->SetRect(true);
-    if(!ret)
-    {
-        printf("\n*** Aviso: nao pode ser feita retificacao das imagens.");
     }
 
     return true;
 }
 
-void camera_closecapturesystem(void)
+void VidereCamera::InitDisplay()
 {
-    videoObject->Close();
+    VC_LOG(INFO,"Initializing Display");
+
+    cv_left_image_ = cvCreateImage(cvSize(width_, height_), IPL_DEPTH_8U, 3);
+    cv_right_image_ = cvCreateImage(cvSize(width_, height_), IPL_DEPTH_8U, 3);
+
+    cvNamedWindow(LEFTWINDOW, CV_WINDOW_AUTOSIZE);
+    cvNamedWindow(RIGHTWINDOW, CV_WINDOW_AUTOSIZE);
+
+    cvMoveWindow(LEFTWINDOW, 0, 0);
+    cvMoveWindow(RIGHTWINDOW, 330, 0);
 }
 
-void camera_svstocvimage(unsigned long *pImSVS, unsigned long Height,
-        unsigned long Width, IplImage *pImCV)
+void VidereCamera::DisplayImagePair()
 {
-    // Imagem de entrada tem que ser colorida
-    pImCV->height = Height;
-    pImCV->width = Width;
-    unsigned long ulong;
-    uchar *puchardest;
-    uchar *pucharorig;
+    cvShowImage(LEFTWINDOW, cv_left_image_);
+    cvShowImage(RIGHTWINDOW, cv_right_image_);
 
-    pucharorig = (uchar *) (&ulong);
-    for(long i = 0; i < pImCV->height; ++i)
+    cvWaitKey(3);
+}
+
+void VidereCamera::CloseCapture()
+{
+    VC_LOG(INFO,"Closing Capture");
+    video_object_->Close();
+}
+
+void VidereCamera::CloseDisplay()
+{
+    VC_LOG(INFO,"Closing Display");
+
+    cvReleaseImage(&cv_left_image_);
+    cvReleaseImage(&cv_right_image_);
+
+    cvDestroyAllWindows();
+}
+
+void VidereCamera::SVStoCV(unsigned long* svs_image, IplImage* cv_image)
+{
+    if(cv_image->height != height_)
+        cv_image->height = height_;
+
+    if(cv_image->width != width_)
+        cv_image->width = width_;
+
+    uchar* svs_pixel;
+    uchar* cv_line;
+
+    unsigned long svs_pixel_value;
+    svs_pixel = (uchar *) &svs_pixel_value;
+
+    for(long ii = 0; ii < cv_image->height; ii++)
     {
-        for(long j = 0; j < pImCV->width; ++j)
+        cv_line = (uchar *) (cv_image->imageData + cv_image->widthStep*ii);
+
+        for(long jj = 0; jj < cv_image->width; jj++)
         {
-            ulong = (pImSVS + Width * i)[j];
-            puchardest = (uchar *) (pImCV->imageData + pImCV->widthStep * i);
-            (puchardest)[j * 3 + 0] = GammaTable[(pucharorig)[2]];
-            (puchardest)[j * 3 + 1] = GammaTable[(pucharorig)[1]];
-            (puchardest)[j * 3 + 2] = GammaTable[(pucharorig)[0]];
+            svs_pixel_value = (svs_image + width_*ii)[jj];
+
+            cv_line[jj * 3 + 0] = gamma_table_[svs_pixel[2]];
+            cv_line[jj * 3 + 1] = gamma_table_[svs_pixel[1]];
+            cv_line[jj * 3 + 2] = gamma_table_[svs_pixel[0]];
         }
     }
 }
 
-void camera_printcvimageinfo(IplImage *pImCV)
-{
-    printf("\n OpenCV Image Info:");
-    printf("\n    nSize = %i", pImCV->nSize);
-    printf("\n    nChannels = %i", pImCV->nChannels);
-    printf("\n    depth = %i", pImCV->depth);
-    printf("\n    dataOrder = %i", pImCV->dataOrder);
-    printf("\n    origin = %i", pImCV->origin);
-    printf("\n    width = %i", pImCV->width);
-    printf("\n    height = %i", pImCV->height);
-    printf("\n    imageSize = %i", pImCV->imageSize);
-    printf("\n    widthStep = %i", pImCV->widthStep);
-}
-
-void camera_printsvsimageinfo(svsImageParams *pIp)
+void VidereCamera::PrintSVSInfo(svsImageParams *svs_params)
 {
     printf("\n SVS Image Info:");
-    printf("\n    linelen = %i", pIp->linelen);
-    printf("\n    lines = %i", pIp->lines);
-    printf("\n    ix = %i", pIp->ix);
-    printf("\n    iy = %i", pIp->iy);
-    printf("\n    width = %i", pIp->width);
-    printf("\n    height = %i", pIp->height);
-    printf("\n    vergence = %f", pIp->vergence);
-    printf("\n    gamma = %f", pIp->gamma);
+    printf("\n    linelen = %i", svs_params->linelen);
+    printf("\n    lines = %i", svs_params->lines);
+    printf("\n    ix = %i", svs_params->ix);
+    printf("\n    iy = %i", svs_params->iy);
+    printf("\n    width = %i", svs_params->width);
+    printf("\n    height = %i", svs_params->height);
+    printf("\n    vergence = %f", svs_params->vergence);
+    printf("\n    gamma = %f", svs_params->gamma);
 }
 
-///////////////////////////////////////////////// END GEOVANY STUFF
+void VidereCamera::PrintCVInfo(IplImage *cv_image)
+{
+    printf("\n OpenCV Image Info:");
+    printf("\n    nSize = %i", cv_image->nSize);
+    printf("\n    nChannels = %i", cv_image->nChannels);
+    printf("\n    depth = %i", cv_image->depth);
+    printf("\n    dataOrder = %i", cv_image->dataOrder);
+    printf("\n    origin = %i", cv_image->origin);
+    printf("\n    width = %i", cv_image->width);
+    printf("\n    height = %i", cv_image->height);
+    printf("\n    imageSize = %i", cv_image->imageSize);
+    printf("\n    widthStep = %i", cv_image->widthStep);
+}
