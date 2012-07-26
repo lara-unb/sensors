@@ -8,26 +8,26 @@
  * @attention Universidade de Brasília (UnB)
  */
 
-#define LEFTWINDOW "Left Camera"
-#define RIGHTWINDOW "Right Camera"
+#include <videre_camera/videre_camera.h>
+#include <videre_camera/videre_log.h>
 
-#include <stdio.h>
-#include <math.h>
-#include <sys/time.h>
-#include <unistd.h>
-#include <sys/io.h>
+// Standard C libraries
+#include <cstdio>
+#include <cmath>
 
+// SVS library
+#include <svsclass.h>
+
+// OpenCV library
 #include <cv.h>
-#include <cvaux.h>
 #include <cxcore.h>
 #include <highgui.h>
 
-#include "svsclass.h"
+#define LEFTWINDOW "Left Camera"
+#define RIGHTWINDOW "Right Camera"
 
-#include <videre_camera/videre_camera.h>
-
-bool VidereCamera::GammaTableIsInitialized_ = false;
-unsigned char VidereCamera::GammaTable_[256];
+bool VidereCamera::gamma_table_initialized_ = false;
+unsigned char VidereCamera::gamma_table_[256];
 
 VidereCamera::~VidereCamera()
 {
@@ -37,38 +37,42 @@ VidereCamera::~VidereCamera()
         CloseDisplay();
 }
 
-bool VidereCamera::GetImagePair(IplImage** ppImageLeft, IplImage** ppImageRight)
+bool VidereCamera::GetImagePair(IplImage** left_image, IplImage** right_image)
 {
-    stereoImage_ = videoObject_->GetImage(timeout_);
+    //printf("[VC] Grabbing image pair\n");
 
-    if(stereoImage_ == NULL)
+    stereo_image_ = video_object_->GetImage(timeout_);
+
+    if(stereo_image_ == NULL)
     {
-        printf("stereoImage == NULL");
+        printf("[VC] ERROR: GetImagePair() failed\n");
         return false;
     }
     else
     {
-        unsigned long* pSVSLeftImage = stereoImage_->Color();
-        unsigned long* pSVSRightImage = stereoImage_->Color();
+        unsigned long* svs_left_image = stereo_image_->Color();
+        unsigned long* svs_right_image = stereo_image_->ColorRight();
 
-        SVStoCV(pSVSLeftImage, *ppImageLeft);
-        SVStoCV(pSVSRightImage, *ppImageRight);
+        SVStoCV(svs_left_image, cv_left_image_);
+        SVStoCV(svs_right_image, cv_right_image_);
 
-        count_++;
+        if(display_)
+            DisplayImagePair();
+
+        *left_image = cv_left_image_;
+        *right_image = cv_right_image_;
+
+        //printf("[VC] Image Count = %d\n", count_++);
 
         return true;
     }
 }
 
-void VidereCamera::DisplayImagePair()
-{
-    cvShowImage(LEFTWINDOW, pImageLeft_);
-    cvShowImage(RIGHTWINDOW, pImageRight_);
-}
-
 void VidereCamera::Init()
 {
-    if(!GammaTableIsInitialized_)
+    printf("[VC] Initializing Videre Camera\n");
+
+    if(!gamma_table_initialized_)
         InitGammaTable();
 
     InitCapture();
@@ -77,134 +81,158 @@ void VidereCamera::Init()
         InitDisplay();
 }
 
+void VidereCamera::InitGammaTable()
+{
+    printf("[VC] Initializing Gamma Table\n");
+
+    for(int ii = 0; ii < 256; ii++)
+    {
+        gamma_table_[ii] = static_cast<unsigned char>(255.0*(pow(ii/255.0, gamma_)));
+    }
+}
+
 bool VidereCamera::InitCapture()
 {
-    printf("\n\n*** Inicialização do módulo camera");
-    printf("\n*** Framegrabber: %s", svsVideoIdent);
+    printf("[VC] Initializing Capture\n");
+    printf("[VC] Framegrabber is %s\n", svsVideoIdent);
 
-    // Get the svsVideoImages object from the currently loaded camera interface
-    videoObject_ = getVideoObject();
-    videoObject_->ReadParams((char*) "cfg/calibration.ini");
+    video_object_ = getVideoObject();
 
-    // Open the stereo device
-    bool ret;
-    ret = videoObject_->Open();
-    if(!ret)
+    printf("[VC] Opening video capture\n");
+
+    bool video_open = video_object_->Open();
+    if(!video_open)
     {
-        printf("\n*** Erro: o sistema de cameras nao pode ser iniciado.");
+        printf("[VC] ERROR: video_object_->Open() failed\n");
+
         CloseCapture();
         return false;
     }
 
-    printf("\n*** Sistema de cameras iniciado: %i cameras encontradas", videoObject_->Enumerate());
+    printf("[VC] Found %i cameras\n", video_object_->Enumerate());
 
-    // Set camera parameters *after* opening the device
-    videoObject_->SetColor(40, 40);
-    videoObject_->SetSize(width_, height_);
-    videoObject_->SetExposure(83, 100);
-    videoObject_->SetBrightness(0, 30);
-    videoObject_->SetRate(30);
+    printf("[VC] Reading camera parameters from %s\n", "cfg/calibration.ini");
 
-    ret = videoObject_->Start();
-    if(!ret)
+    video_object_->ReadParams((char*) "cfg/calibration.ini");
+
+    printf("[VC] Setting camera parameters\n");
+
+    video_object_->SetColor(40, 40);
+    video_object_->SetSize(width_, height_);
+    video_object_->SetExposure(83, 100);
+    video_object_->SetBrightness(0, 30);
+    video_object_->SetRate(30);
+
+    printf("[VC] Setting up image rectification\n");
+
+    bool video_rectified = video_object_->SetRect(true);
+    if(!video_rectified)
+        printf("[VC] ERROR: video_object_->SetRect() failed\n");
+
+    printf("[VC] Starting video capture\n");
+
+    bool video_started = video_object_->Start();
+    if(!video_started)
     {
-        printf("\n*** Erro: nao pode ser iniciada captura do sistema de cameras.");
+        printf("[VC] ERROR: video_object_->Start() failed\n");
+
         CloseCapture();
         return false;
-    }
-
-    // Set up acquisition to rectify the image
-    ret = videoObject_->SetRect(true);
-    if(!ret)
-    {
-        printf("\n*** Aviso: nao pode ser feita retificacao das imagens.");
     }
 
     return true;
 }
 
-void VidereCamera::CloseCapture()
-{
-    videoObject_->Close();
-}
-
 void VidereCamera::InitDisplay()
 {
-    // Create CV images
-    pImageLeft_ = cvCreateImage(cvSize(width_, height_), IPL_DEPTH_8U, 3);
-    pImageRight_ = cvCreateImage(cvSize(width_, height_), IPL_DEPTH_8U, 3);
+    printf("[VC] Initializing Display\n");
 
-    // Create CV windows
+    cv_left_image_ = cvCreateImage(cvSize(width_, height_), IPL_DEPTH_8U, 3);
+    cv_right_image_ = cvCreateImage(cvSize(width_, height_), IPL_DEPTH_8U, 3);
+
     cvNamedWindow(LEFTWINDOW, CV_WINDOW_AUTOSIZE);
     cvNamedWindow(RIGHTWINDOW, CV_WINDOW_AUTOSIZE);
+
     cvMoveWindow(LEFTWINDOW, 0, 0);
     cvMoveWindow(RIGHTWINDOW, 330, 0);
 }
 
+void VidereCamera::DisplayImagePair()
+{
+    cvShowImage(LEFTWINDOW, cv_left_image_);
+    cvShowImage(RIGHTWINDOW, cv_right_image_);
+
+    cvWaitKey(3);
+}
+
+void VidereCamera::CloseCapture()
+{
+    printf("[VC] Closing Capture\n");
+    video_object_->Close();
+}
+
 void VidereCamera::CloseDisplay()
 {
-    // Release CV images
-    cvReleaseImage(&pImageLeft_);
-    cvReleaseImage(&pImageRight_);
+    printf("[VC] Closing Display\n");
 
-    // Destroy CV windows
+    cvReleaseImage(&cv_left_image_);
+    cvReleaseImage(&cv_right_image_);
+
     cvDestroyAllWindows();
 }
 
-void VidereCamera::InitGammaTable()
+void VidereCamera::SVStoCV(unsigned long* svs_image, IplImage* cv_image)
 {
-    for(int n = 0; n < 256; n++)
+    if(cv_image->height != height_)
+        cv_image->height = height_;
+
+    if(cv_image->width != width_)
+        cv_image->width = width_;
+
+    uchar* svs_pixel;
+    uchar* cv_line;
+
+    unsigned long svs_pixel_value;
+    svs_pixel = (uchar *) &svs_pixel_value;
+
+    for(long ii = 0; ii < cv_image->height; ii++)
     {
-        GammaTable_[n] = (unsigned char) (255.0*(pow((double) n / 255.0, gamma_)));
-    }
-}
+        cv_line = (uchar *) (cv_image->imageData + cv_image->widthStep*ii);
 
-void VidereCamera::SVStoCV(unsigned long* pImSVS, IplImage*pImCV)
-{
-    pImCV->height = height_;
-    pImCV->width = width_;
-
-    unsigned long ulong;
-    uchar *puchardest;
-    uchar *pucharorig;
-
-    pucharorig = (uchar *) (&ulong);
-    for(long i = 0; i < pImCV->height; ++i)
-    {
-        for(long j = 0; j < pImCV->width; ++j)
+        for(long jj = 0; jj < cv_image->width; jj++)
         {
-            ulong = (pImSVS + width_ * i)[j];
-            puchardest = (uchar *) (pImCV->imageData + pImCV->widthStep * i);
-            (puchardest)[j * 3 + 0] = GammaTable_[(pucharorig)[2]];
-            (puchardest)[j * 3 + 1] = GammaTable_[(pucharorig)[1]];
-            (puchardest)[j * 3 + 2] = GammaTable_[(pucharorig)[0]];
+            svs_pixel_value = (svs_image + width_*ii)[jj];
+
+            cv_line[jj * 3 + 0] = gamma_table_[svs_pixel[2]];
+            cv_line[jj * 3 + 1] = gamma_table_[svs_pixel[1]];
+            cv_line[jj * 3 + 2] = gamma_table_[svs_pixel[0]];
         }
     }
 }
 
-void VidereCamera::PrintSVSInfo(svsImageParams *pIp)
+void VidereCamera::PrintSVSInfo(svsImageParams *svs_params)
 {
     printf("\n SVS Image Info:");
-    printf("\n    linelen = %i", pIp->linelen);
-    printf("\n    lines = %i", pIp->lines);
-    printf("\n    ix = %i", pIp->ix);
-    printf("\n    iy = %i", pIp->iy);
-    printf("\n    width = %i", pIp->width);
-    printf("\n    height = %i", pIp->height);
-    printf("\n    vergence = %f", pIp->vergence);
-    printf("\n    gamma = %f", pIp->gamma);
+    printf("\n    linelen = %i", svs_params->linelen);
+    printf("\n    lines = %i", svs_params->lines);
+    printf("\n    ix = %i", svs_params->ix);
+    printf("\n    iy = %i", svs_params->iy);
+    printf("\n    width = %i", svs_params->width);
+    printf("\n    height = %i", svs_params->height);
+    printf("\n    vergence = %f", svs_params->vergence);
+    printf("\n    gamma = %f", svs_params->gamma);
 }
 
-void VidereCamera::PrintCVInfo(IplImage *pImCV)
+void VidereCamera::PrintCVInfo(IplImage *cv_image)
 {
     printf("\n OpenCV Image Info:");
-    printf("\n    nSize = %i", pImCV->nSize);
-    printf("\n    nChannels = %i", pImCV->nChannels);
-    printf("\n    depth = %i", pImCV->depth);
-    printf("\n    dataOrder = %i", pImCV->dataOrder);
-    printf("\n    origin = %i", pImCV->origin);
-    printf("\n    width = %i", pImCV->width);
-    printf("\n    height = %i", pImCV->height);
-    printf("\n    imageSize = %i", pImCV->imageSize);
-    printf("\n    widthStep = %i", pImCV->widthStep);
+    printf("\n    nSize = %i", cv_image->nSize);
+    printf("\n    nChannels = %i", cv_image->nChannels);
+    printf("\n    depth = %i", cv_image->depth);
+    printf("\n    dataOrder = %i", cv_image->dataOrder);
+    printf("\n    origin = %i", cv_image->origin);
+    printf("\n    width = %i", cv_image->width);
+    printf("\n    height = %i", cv_image->height);
+    printf("\n    imageSize = %i", cv_image->imageSize);
+    printf("\n    widthStep = %i", cv_image->widthStep);
 }

@@ -17,8 +17,7 @@
 #ifndef VIDERE_CAMERA_NODE_H
 #define VIDERE_CAMERA_NODE_H
 
-void sigsegv_handler(int sig);
-void sigint_handler(int sig);
-void sigtstp_handler(int sig);
+void setup_sig_handler();
+void sig_handler(int sig);
 
 #endif //VIDERE_CAMERA_NODE_H

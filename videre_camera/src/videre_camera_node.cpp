@@ -8,43 +8,36 @@
  * @attention Universidade de Brasília (UnB)
  */
 
-#include <signal.h>
-
-#include <stdio.h>
-
-#include <cv.h>
-#include <cvaux.h>
-#include <cxcore.h>
-#include <highgui.h>
-
 #include <videre_camera/videre_camera.h>
 #include <videre_camera/videre_camera_node.h>
 
-VidereCamera* vc;
+// Standard C libraries
+#include <signal.h>
+#include <stdio.h>
 
-IplImage* pImageLeft;
-IplImage* pImageRight;
+// OpenCV library
+#include <cv.h>
+#include <highgui.h>
+
+VidereCamera* vc;
 
 int main(int argc, char **argv)
 {
     // Set up signal handlers
-    signal(SIGSEGV, &sigsegv_handler);
-    signal(SIGINT, &sigint_handler);
-    signal(SIGTSTP, &sigtstp_handler);
+    setup_sig_handler();
+
+    // Initialize CV images
+    IplImage* left_image = cvCreateImage(cvSize(320,240), IPL_DEPTH_8U, 3);
+    IplImage* right_image = cvCreateImage(cvSize(320,240), IPL_DEPTH_8U, 3);
 
     // Create VidereCamera object
     vc = new VidereCamera(true);
 
     while(1)
     {
-        bool got_image = vc->GetImagePair(&pImageLeft, &pImageRight);
+        bool got_image = vc->GetImagePair(&left_image, &right_image);
 
-        if(got_image)
-        {
-            vc->DisplayImagePair();
-            cvWaitKey(100);
-        }
-        else
+        if(!got_image)
         {
             printf("Error in camera_getimagepair, exiting program\n");
             break;
@@ -54,25 +47,33 @@ int main(int argc, char **argv)
     return 0;
 }
 
-void sigsegv_handler(int sig)
+void setup_sig_handler()
 {
-    signal(SIGSEGV, SIG_DFL);
-    printf("System segfaulted, stopping camera nicely\n");
-
-    vc->~VidereCamera();
+    signal(SIGSEGV, &sig_handler);
+    signal(SIGINT, &sig_handler);
+    signal(SIGTSTP, &sig_handler);
 }
 
-void sigint_handler(int sig)
+void sig_handler(int sig)
 {
-    signal(SIGINT, SIG_DFL);
-    printf("System interrupted, stopping camera nicely\n");
+    switch(sig)
+    {
+        case SIGSEGV:
+            signal(SIGSEGV, SIG_DFL);
+            printf("Signal caught: SIGSEGV\n");
+            break;
+        case SIGINT:
+            signal(SIGINT, SIG_IGN);
+            printf("Signal caught: SIGINT\n");
+            break;
+        case SIGTSTP:
+            signal(SIGTSTP, SIG_IGN);
+            printf("Signal caught: SIGTSTP\n");
+            break;
+    }
 
+    printf("Closing camera nicely...\n");
     vc->~VidereCamera();
-}
 
-void sigtstp_handler(int sig){
-    signal(SIGTSTP, SIG_DFL);
-    printf("System stopped temporarily, stopping camera nicely\n");
-
-    vc->~VidereCamera();
+    exit(0);
 }
