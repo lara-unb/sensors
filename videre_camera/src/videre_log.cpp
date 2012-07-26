@@ -22,10 +22,10 @@ void VC_LOG(LogLevel level, const char* msg, ...)
     switch(level)
     {
         case INFO:
-            printf("[VC] %s", buffer);
+            printf("[VC] %s\n", buffer);
             break;
         case ERROR:
-            printf("[VC] Error: %s", buffer);
+            printf("\033[33m[VC] Error: %s\033[0;0m\n", buffer);
             break;
     }
 }

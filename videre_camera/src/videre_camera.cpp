@@ -39,13 +39,13 @@ VidereCamera::~VidereCamera()
 
 bool VidereCamera::GetImagePair(IplImage** left_image, IplImage** right_image)
 {
-    //printf("[VC] Grabbing image pair\n");
+    //VC_LOG(INFO,"Grabbing image pair");
 
     stereo_image_ = video_object_->GetImage(timeout_);
 
     if(stereo_image_ == NULL)
     {
-        printf("[VC] ERROR: GetImagePair() failed\n");
+        VC_LOG(ERROR,"GetImagePair() failed");
         return false;
     }
     else
@@ -62,7 +62,7 @@ bool VidereCamera::GetImagePair(IplImage** left_image, IplImage** right_image)
         *left_image = cv_left_image_;
         *right_image = cv_right_image_;
 
-        //printf("[VC] Image Count = %d\n", count_++);
+        //VC_LOG(INFO,"Image Count = %d", count_++);
 
         return true;
     }
@@ -70,7 +70,7 @@ bool VidereCamera::GetImagePair(IplImage** left_image, IplImage** right_image)
 
 void VidereCamera::Init()
 {
-    printf("[VC] Initializing Videre Camera\n");
+    VC_LOG("Initializing Videre Camera");
 
     if(!gamma_table_initialized_)
         InitGammaTable();
@@ -83,7 +83,7 @@ void VidereCamera::Init()
 
 void VidereCamera::InitGammaTable()
 {
-    printf("[VC] Initializing Gamma Table\n");
+    VC_LOG(INFO,"Initializing Gamma Table");
 
     for(int ii = 0; ii < 256; ii++)
     {
@@ -93,29 +93,29 @@ void VidereCamera::InitGammaTable()
 
 bool VidereCamera::InitCapture()
 {
-    printf("[VC] Initializing Capture\n");
-    printf("[VC] Framegrabber is %s\n", svsVideoIdent);
+    VC_LOG(INFO,"Initializing Capture");
+    VC_LOG(INFO,"Framegrabber is %s", svsVideoIdent);
 
     video_object_ = getVideoObject();
 
-    printf("[VC] Opening video capture\n");
+    VC_LOG(INFO,"Opening video capture");
 
     bool video_open = video_object_->Open();
     if(!video_open)
     {
-        printf("[VC] ERROR: video_object_->Open() failed\n");
+        VC_LOG(ERROR,"video_object_->Open() failed");
 
         CloseCapture();
         return false;
     }
 
-    printf("[VC] Found %i cameras\n", video_object_->Enumerate());
+    VC_LOG(INFO,"Found %i cameras", video_object_->Enumerate());
 
-    printf("[VC] Reading camera parameters from %s\n", "cfg/calibration.ini");
+    VC_LOG(INFO,"Reading camera parameters from %s", "cfg/calibration.ini");
 
     video_object_->ReadParams((char*) "cfg/calibration.ini");
 
-    printf("[VC] Setting camera parameters\n");
+    VC_LOG(INFO,"Setting camera parameters");
 
     video_object_->SetColor(40, 40);
     video_object_->SetSize(width_, height_);
@@ -123,18 +123,18 @@ bool VidereCamera::InitCapture()
     video_object_->SetBrightness(0, 30);
     video_object_->SetRate(30);
 
-    printf("[VC] Setting up image rectification\n");
+    VC_LOG(INFO,"Setting up image rectification");
 
     bool video_rectified = video_object_->SetRect(true);
     if(!video_rectified)
-        printf("[VC] ERROR: video_object_->SetRect() failed\n");
+        VC_LOG(ERROR,"video_object_->SetRect() failed");
 
-    printf("[VC] Starting video capture\n");
+    VC_LOG(INFO,"Starting video capture");
 
     bool video_started = video_object_->Start();
     if(!video_started)
     {
-        printf("[VC] ERROR: video_object_->Start() failed\n");
+        VC_LOG(ERROR,"video_object_->Start() failed");
 
         CloseCapture();
         return false;
@@ -145,7 +145,7 @@ bool VidereCamera::InitCapture()
 
 void VidereCamera::InitDisplay()
 {
-    printf("[VC] Initializing Display\n");
+    VC_LOG(INFO,"Initializing Display");
 
     cv_left_image_ = cvCreateImage(cvSize(width_, height_), IPL_DEPTH_8U, 3);
     cv_right_image_ = cvCreateImage(cvSize(width_, height_), IPL_DEPTH_8U, 3);
@@ -167,13 +167,13 @@ void VidereCamera::DisplayImagePair()
 
 void VidereCamera::CloseCapture()
 {
-    printf("[VC] Closing Capture\n");
+    VC_LOG(INFO,"Closing Capture");
     video_object_->Close();
 }
 
 void VidereCamera::CloseDisplay()
 {
-    printf("[VC] Closing Display\n");
+    VC_LOG(INFO,"Closing Display");
 
     cvReleaseImage(&cv_left_image_);
     cvReleaseImage(&cv_right_image_);

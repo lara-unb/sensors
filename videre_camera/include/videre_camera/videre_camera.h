@@ -18,8 +18,6 @@
 #ifndef VIDERE_CAMERA_H
 #define VIDERE_CAMERA_H
 
-#include <videre_camera/videre_log.h>
-
 // Standard C libraries
 #include <cstdio>
 
@@ -40,7 +38,7 @@ class VidereCamera
     public:
         VidereCamera(bool display = false, int width = 320, int height = 240, double gamma = 0.850, int timeout = 5000)
         {
-            VC_LOG(INFO, "[VidereCamera]\n");
+            printf("[VidereCamera]\n");
 
             display_ = display;
             width_ = width;
