@@ -16,32 +16,46 @@
 #include <stdio.h>
 
 // OpenCV library
-#include <cv.h>
-#include <highgui.h>
+#include <opencv2/core/core.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/highgui/highgui.hpp>
+
+// ROS libraries
+#include <ros/ros.h>
 
 VidereCamera* vc;
 
 int main(int argc, char **argv)
 {
-    // Set up signal handlers
+    // Setup signal handlers
     setup_sig_handler();
 
     // Initialize CV images
-    IplImage* left_image = cvCreateImage(cvSize(320,240), IPL_DEPTH_8U, 3);
-    IplImage* right_image = cvCreateImage(cvSize(320,240), IPL_DEPTH_8U, 3);
+    cv::Mat left_image(240, 320, CV_8UC3);
+    cv::Mat right_image(240, 320, CV_8UC3);
 
     // Create VidereCamera object
     vc = new VidereCamera(true);
 
-    while(1)
+    // Setup ROS structures
+    ros::init(argc, argv, "videre_camera_node", ros::init_options::AnonymousName);
+    ros::NodeHandle vc_nh;
+
+    ros::Rate loop_rate(15);
+
+    while(ros::ok())
     {
-        bool got_image = vc->GetImagePair(&left_image, &right_image);
+        bool got_image = vc->GetImagePair(left_image, right_image);
 
         if(!got_image)
         {
-            printf("Error in camera_getimagepair, exiting program\n");
+            ROS_INFO("Error in camera_getimagepair, exiting program");
             break;
         }
+
+        ros::spinOnce();
+
+        loop_rate.sleep();
     }
 
     return 0;

@@ -25,7 +25,7 @@
 #include <svsclass.h>
 
 // OpenCV library
-#include <cv.h>
+#include <opencv2/core/core.hpp>
 
 // A macro to disallow the copy constructor and operator= functions
 // This should be used in the private: declarations for a class
@@ -52,7 +52,7 @@ class VidereCamera
 
         ~VidereCamera();
 
-        bool GetImagePair(IplImage** ppImageLeft, IplImage** ppImageRight);
+        bool GetImagePair(cv::Mat& left_image, cv::Mat& right_image);
 
     private:
         bool display_;
@@ -67,8 +67,8 @@ class VidereCamera
         svsVideoImages* video_object_;
         svsStereoImage* stereo_image_;
 
-        IplImage* cv_left_image_;
-        IplImage* cv_right_image_;
+        cv::Mat cv_left_image_;
+        cv::Mat cv_right_image_;
 
         static bool gamma_table_initialized_;
         static unsigned char gamma_table_[256];
@@ -84,9 +84,9 @@ class VidereCamera
         void CloseDisplay();
         void CloseCapture();
 
-        void SVStoCV(unsigned long* svs_image, IplImage* cv_image);
-        void PrintSVSInfo(svsImageParams* svs_params);
-        void PrintCVInfo(IplImage* cv_image);
+        void SVStoCV(unsigned long* svs_image, cv::Mat& cv_image);
+        void PrintSVSInfo();
+        void PrintCVInfo(cv::Mat& cv_image);
 
         DISALLOW_COPY_AND_ASSIGN(VidereCamera);
 };

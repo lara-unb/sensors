@@ -13,18 +13,17 @@
 
 // Standard C libraries
 #include <cstdio>
-#include <cmath>
 
 // SVS library
 #include <svsclass.h>
 
 // OpenCV library
-#include <cv.h>
-#include <cxcore.h>
-#include <highgui.h>
+#include <opencv2/core/core.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/highgui/highgui.hpp>
 
-#define LEFTWINDOW "Left Camera"
-#define RIGHTWINDOW "Right Camera"
+#define LEFT_WINDOW "Left Camera"
+#define RIGHT_WINDOW "Right Camera"
 
 bool VidereCamera::gamma_table_initialized_ = false;
 unsigned char VidereCamera::gamma_table_[256];
@@ -37,7 +36,7 @@ VidereCamera::~VidereCamera()
         CloseDisplay();
 }
 
-bool VidereCamera::GetImagePair(IplImage** left_image, IplImage** right_image)
+bool VidereCamera::GetImagePair(cv::Mat& left_image, cv::Mat& right_image)
 {
     //VC_LOG(INFO,"Grabbing image pair");
 
@@ -59,8 +58,8 @@ bool VidereCamera::GetImagePair(IplImage** left_image, IplImage** right_image)
         if(display_)
             DisplayImagePair();
 
-        *left_image = cv_left_image_;
-        *right_image = cv_right_image_;
+        cv_left_image_.copyTo(left_image);
+        cv_right_image_.copyTo(right_image);
 
         //VC_LOG(INFO,"Image Count = %d", count_++);
 
@@ -150,19 +149,20 @@ void VidereCamera::InitDisplay()
     cv_left_image_ = cvCreateImage(cvSize(width_, height_), IPL_DEPTH_8U, 3);
     cv_right_image_ = cvCreateImage(cvSize(width_, height_), IPL_DEPTH_8U, 3);
 
-    cvNamedWindow(LEFTWINDOW, CV_WINDOW_AUTOSIZE);
-    cvNamedWindow(RIGHTWINDOW, CV_WINDOW_AUTOSIZE);
+    cv::namedWindow(LEFT_WINDOW, CV_WINDOW_AUTOSIZE);
+    cv::namedWindow(RIGHT_WINDOW, CV_WINDOW_AUTOSIZE);
 
-    cvMoveWindow(LEFTWINDOW, 0, 0);
-    cvMoveWindow(RIGHTWINDOW, 330, 0);
+    // C function is still used for move window
+    cvMoveWindow(LEFT_WINDOW, 0, 0);
+    cvMoveWindow(RIGHT_WINDOW, 330, 0);
 }
 
 void VidereCamera::DisplayImagePair()
 {
-    cvShowImage(LEFTWINDOW, cv_left_image_);
-    cvShowImage(RIGHTWINDOW, cv_right_image_);
+    cv::imshow(LEFT_WINDOW, cv_left_image_);
+    cv::imshow(RIGHT_WINDOW, cv_right_image_);
 
-    cvWaitKey(3);
+    cv::waitKey(3);
 }
 
 void VidereCamera::CloseCapture()
@@ -175,19 +175,20 @@ void VidereCamera::CloseDisplay()
 {
     VC_LOG(INFO,"Closing Display");
 
-    cvReleaseImage(&cv_left_image_);
-    cvReleaseImage(&cv_right_image_);
-
-    cvDestroyAllWindows();
+    cv::destroyWindow(LEFT_WINDOW);
+    cv::destroyWindow(RIGHT_WINDOW);
 }
 
-void VidereCamera::SVStoCV(unsigned long* svs_image, IplImage* cv_image)
+void VidereCamera::SVStoCV(unsigned long* svs_image, cv::Mat& cv_image)
 {
-    if(cv_image->height != height_)
-        cv_image->height = height_;
+    if(cv_image.rows != height_)
+        cv_image.rows = height_;
 
-    if(cv_image->width != width_)
-        cv_image->width = width_;
+    if(cv_image.cols != width_)
+        cv_image.cols = width_;
+
+    int nl = cv_image.rows;
+    int nc = cv_image.cols*cv_image.channels();
 
     uchar* svs_pixel;
     uchar* cv_line;
@@ -195,11 +196,11 @@ void VidereCamera::SVStoCV(unsigned long* svs_image, IplImage* cv_image)
     unsigned long svs_pixel_value;
     svs_pixel = (uchar *) &svs_pixel_value;
 
-    for(long ii = 0; ii < cv_image->height; ii++)
+    for(long ii = 0; ii < nl; ii++)
     {
-        cv_line = (uchar *) (cv_image->imageData + cv_image->widthStep*ii);
+        cv_line = cv_image.ptr<uchar>(ii);
 
-        for(long jj = 0; jj < cv_image->width; jj++)
+        for(long jj = 0; jj < nc; jj++)
         {
             svs_pixel_value = (svs_image + width_*ii)[jj];
 
@@ -210,29 +211,26 @@ void VidereCamera::SVStoCV(unsigned long* svs_image, IplImage* cv_image)
     }
 }
 
-void VidereCamera::PrintSVSInfo(svsImageParams *svs_params)
+void VidereCamera::PrintSVSInfo()
 {
-    printf("\n SVS Image Info:");
-    printf("\n    linelen = %i", svs_params->linelen);
-    printf("\n    lines = %i", svs_params->lines);
-    printf("\n    ix = %i", svs_params->ix);
-    printf("\n    iy = %i", svs_params->iy);
-    printf("\n    width = %i", svs_params->width);
-    printf("\n    height = %i", svs_params->height);
-    printf("\n    vergence = %f", svs_params->vergence);
-    printf("\n    gamma = %f", svs_params->gamma);
+    svsImageParams* svs_params = video_object_->GetIP();
+
+    VC_LOG(INFO,"SVS Image Info:");
+    VC_LOG(INFO,"   linelen = %i",  svs_params->linelen);
+    VC_LOG(INFO,"   lines = %i",    svs_params->lines);
+    VC_LOG(INFO,"   ix = %i",       svs_params->ix);
+    VC_LOG(INFO,"   iy = %i",       svs_params->iy);
+    VC_LOG(INFO,"   width = %i",    svs_params->width);
+    VC_LOG(INFO,"   height = %i",   svs_params->height);
+    VC_LOG(INFO,"   vergence = %f", svs_params->vergence);
+    VC_LOG(INFO,"   gamma = %f",    svs_params->gamma);
 }
 
-void VidereCamera::PrintCVInfo(IplImage *cv_image)
+void VidereCamera::PrintCVInfo(cv::Mat& cv_image)
 {
-    printf("\n OpenCV Image Info:");
-    printf("\n    nSize = %i", cv_image->nSize);
-    printf("\n    nChannels = %i", cv_image->nChannels);
-    printf("\n    depth = %i", cv_image->depth);
-    printf("\n    dataOrder = %i", cv_image->dataOrder);
-    printf("\n    origin = %i", cv_image->origin);
-    printf("\n    width = %i", cv_image->width);
-    printf("\n    height = %i", cv_image->height);
-    printf("\n    imageSize = %i", cv_image->imageSize);
-    printf("\n    widthStep = %i", cv_image->widthStep);
+    VC_LOG(INFO,"OpenCV Image Info:");
+    VC_LOG(INFO,"   channels = %i", cv_image.channels());
+    VC_LOG(INFO,"   depth = %i",    cv_image.depth());
+    VC_LOG(INFO,"   width = %i",    cv_image.cols);
+    VC_LOG(INFO,"   height = %i",   cv_image.rows);
 }

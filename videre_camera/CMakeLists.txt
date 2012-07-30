@@ -36,11 +36,7 @@ rosbuild_add_executable(videre_camera src/videre_camera_node.cpp src/videre_came
 # Enable pkg-config in cmake
 include($ENV{ROS_ROOT}/core/rosbuild/FindPkgConfig.cmake)
 
-# Run pkg-config for OpenCV
-pkg_check_modules(OPENCV REQUIRED opencv)
-
 # Definitions from original Makefile
-add_definitions(-DUNIX -DLINUX -D_REENTRANT -D_POSIX_TIMER)
-include_directories(/usr/local/lib/svs/src ${OPENCV_INCLUDE_DIRS})
-link_directories(/usr/local/lib/svs/bin ${OPENCV_LIBRARY_DIRS})
-target_link_libraries(videre_camera m c rt pthread svs svscalc svscap ${OPENCV_LIBRARIES})
+include_directories(/usr/local/lib/svs/src)
+link_directories(/usr/local/lib/svs/bin)
+target_link_libraries(videre_camera svs svscalc svscap)
