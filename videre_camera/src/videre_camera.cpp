@@ -71,6 +71,9 @@ void VidereCamera::Init()
 {
     VC_LOG(INFO,"Initializing Videre Camera");
 
+    cv_left_image_ = cvCreateImage(cvSize(width_, height_), IPL_DEPTH_8U, 3);
+    cv_right_image_ = cvCreateImage(cvSize(width_, height_), IPL_DEPTH_8U, 3);
+
     if(!gamma_table_initialized_)
         InitGammaTable();
 
@@ -145,9 +148,6 @@ bool VidereCamera::InitCapture()
 void VidereCamera::InitDisplay()
 {
     VC_LOG(INFO,"Initializing Display");
-
-    cv_left_image_ = cvCreateImage(cvSize(width_, height_), IPL_DEPTH_8U, 3);
-    cv_right_image_ = cvCreateImage(cvSize(width_, height_), IPL_DEPTH_8U, 3);
 
     cv::namedWindow(LEFT_WINDOW, CV_WINDOW_AUTOSIZE);
     cv::namedWindow(RIGHT_WINDOW, CV_WINDOW_AUTOSIZE);

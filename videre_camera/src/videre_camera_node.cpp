@@ -23,6 +23,10 @@
 // ROS libraries
 #include <ros/ros.h>
 
+#include <cv_bridge/cv_bridge.h>
+#include <image_transport/image_transport.h>
+#include <sensor_msgs/image_encodings.h>
+
 VidereCamera* vc;
 
 int main(int argc, char **argv)
@@ -35,16 +39,31 @@ int main(int argc, char **argv)
     cv::Mat right_image(240, 320, CV_8UC3);
 
     // Create VidereCamera object
-    vc = new VidereCamera(true);
+    vc = new VidereCamera(false);
 
     // Setup ROS structures
     ros::init(argc, argv, "videre_camera_node", ros::init_options::AnonymousName);
     ros::NodeHandle vc_nh;
 
+    // image_transport deals with image topics
+    image_transport::ImageTransport it(vc_nh);
+    image_transport::Publisher pub_left = it.advertise("videre_camera/image/left", 1);
+    image_transport::Publisher pub_right = it.advertise("videre_camera/image/right", 1);
+
+    // cv_bridge deals with conversion between cv::Mat and sensor_msgs::Image
+    cv_bridge::CvImage msg_left;
+    cv_bridge::CvImage msg_right;
+
+    // We can set encoding prior to loop because it doesn't change
+    msg_left.encoding = sensor_msgs::image_encodings::TYPE_8UC3;
+    msg_right.encoding = sensor_msgs::image_encodings::TYPE_8UC3;
+
     ros::Rate loop_rate(15);
 
     while(ros::ok())
     {
+        ros::Time ts = ros::Time::now();
+
         bool got_image = vc->GetImagePair(left_image, right_image);
 
         if(!got_image)
@@ -53,8 +72,19 @@ int main(int argc, char **argv)
             break;
         }
 
-        ros::spinOnce();
+        // Set image timestamps
+        msg_left.header.stamp = ts;
+        msg_right.header.stamp = ts;
 
+        // Set image data
+        msg_left.image = left_image;
+        msg_right.image = right_image;
+
+        // Publish images
+        pub_left.publish(msg_left.toImageMsg());
+        pub_right.publish(msg_right.toImageMsg());
+
+        ros::spinOnce();
         loop_rate.sleep();
     }
 
