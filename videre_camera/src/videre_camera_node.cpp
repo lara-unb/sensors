@@ -47,8 +47,8 @@ int main(int argc, char **argv)
 
     // image_transport deals with image topics
     image_transport::ImageTransport it(vc_nh);
-    image_transport::Publisher pub_left = it.advertise("videre_camera/image/left", 1);
-    image_transport::Publisher pub_right = it.advertise("videre_camera/image/right", 1);
+    image_transport::Publisher pub_left = it.advertise("videre_camera/left/image_rect_color", 1);
+    image_transport::Publisher pub_right = it.advertise("videre_camera/right/image_rect_color", 1);
 
     // cv_bridge deals with conversion between cv::Mat and sensor_msgs::Image
     cv_bridge::CvImage msg_left;
