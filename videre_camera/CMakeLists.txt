@@ -7,7 +7,7 @@ include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 #  Release        : w/o debug symbols, w/ optimization
 #  RelWithDebInfo : w/ debug symbols, w/ optimization
 #  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
-#set(ROS_BUILD_TYPE RelWithDebInfo)
+set(ROS_BUILD_TYPE RelWithDebInfo)
 
 rosbuild_init()
 
@@ -31,7 +31,7 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
 #rosbuild_add_executable(talker src/talker.cpp)
 #rosbuild_add_executable(listener src/listener.cpp)
-rosbuild_add_executable(videre_camera src/videre_camera_node.cpp src/videre_camera.cpp src/videre_log.cpp)
+rosbuild_add_executable(videre_camera src/videre_camera_node.cpp src/videre_camera.cpp src/videre_log.cpp src/image_display.cpp src/camera_parameters.cpp src/stereo_data.cpp) #src/colormap.cpp src/helper.cpp)
 
 # Enable pkg-config in cmake
 include($ENV{ROS_ROOT}/core/rosbuild/FindPkgConfig.cmake)

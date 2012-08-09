@@ -37,9 +37,10 @@ int main(int argc, char **argv)
     // Initialize CV images
     cv::Mat left_image(240, 320, CV_8UC3);
     cv::Mat right_image(240, 320, CV_8UC3);
+    cv::Mat disp_image(240, 320, CV_16SC3);
 
     // Create VidereCamera object
-    vc = new VidereCamera(false);
+    vc = new VidereCamera(true);
 
     // Setup ROS structures
     ros::init(argc, argv, "videre_camera_node", ros::init_options::AnonymousName);
@@ -64,7 +65,10 @@ int main(int argc, char **argv)
     {
         ros::Time ts = ros::Time::now();
 
-        bool got_image = vc->GetImagePair(left_image, right_image);
+        bool got_image = vc->GetData();
+
+        left_image = vc->left();
+        right_image = vc->right();
 
         if(!got_image)
         {

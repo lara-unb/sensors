@@ -18,6 +18,10 @@
 #ifndef VIDERE_CAMERA_H
 #define VIDERE_CAMERA_H
 
+#include <videre_camera/image_display.h>
+#include <videre_camera/camera_parameters.h>
+#include <videre_camera/stereo_data.h>
+
 // Standard C libraries
 #include <cstdio>
 
@@ -36,14 +40,14 @@
 class VidereCamera
 {
     public:
-        VidereCamera(bool display = false, int width = 320, int height = 240, double gamma = 0.850, int timeout = 5000)
+        VidereCamera(bool display = false, int width = 320, int height = 240, int timeout = 5000)
         {
             printf("[VidereCamera]\n");
 
-            display_ = display;
             width_ = width;
             height_ = height;
-            gamma_ = gamma;
+
+            display_ = display;
             timeout_ = timeout;
             count_ = 0;
 
@@ -52,41 +56,35 @@ class VidereCamera
 
         ~VidereCamera();
 
-        bool GetImagePair(cv::Mat& left_image, cv::Mat& right_image);
+        bool GetData();
+
+        inline const cv::Mat& left() { return sd_->cv_left(); }
+        inline const cv::Mat& right() { return sd_->cv_right(); }
 
     private:
-        bool display_;
-
+        // Camera Capture variables
         int width_;
         int height_;
-        double gamma_;
 
         int timeout_;
         int count_;
 
-        svsVideoImages* video_object_;
-        svsStereoImage* stereo_image_;
+        svsVideoImages* svs_vi_;
 
-        cv::Mat cv_left_image_;
-        cv::Mat cv_right_image_;
+        // Stereo Data variables
+        StereoData* sd_;
 
-        static bool gamma_table_initialized_;
-        static unsigned char gamma_table_[256];
+        // Camera Parameters variables
+        CameraParameters* cp_;
 
+        // Camera Display variables
+        bool display_;
+        ImageDisplay* id_;
+
+        // Camera Capture functions
         void Init();
-
-        void InitGammaTable();
-        void InitDisplay();
         bool InitCapture();
-
-        void DisplayImagePair();
-
-        void CloseDisplay();
         void CloseCapture();
-
-        void SVStoCV(unsigned long* svs_image, cv::Mat& cv_image);
-        void PrintSVSInfo();
-        void PrintCVInfo(cv::Mat& cv_image);
 
         DISALLOW_COPY_AND_ASSIGN(VidereCamera);
 };
