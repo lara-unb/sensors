@@ -61,6 +61,9 @@ class VidereCamera
         inline const cv::Mat& left() { return sd_->cv_left(); }
         inline const cv::Mat& right() { return sd_->cv_right(); }
 
+        inline StereoData* sd() { return sd_; }
+        inline CameraParameters* cp() { return cp_; }
+
     private:
         // Camera Capture variables
         int width_;

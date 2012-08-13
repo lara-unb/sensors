@@ -12,23 +12,17 @@
 #include <videre_camera/videre_log.h>
 
 // Standard C/C++ libraries
-#include <cstring>
 #include <string>
 
 // SVS library
 #include <svsclass.h>
 
-CameraParameters::~CameraParameters()
-{
-    Close();
-}
-
 void CameraParameters::Init()
 {
     VC_LOG(INFO, "Initializing Camera Parameters");
-    VC_LOG(INFO, "Reading camera parameters from %s", params_file_);
+    VC_LOG(INFO, "Reading camera parameters from %s", params_file_.c_str());
 
-    svs_vi_->ReadParams((char*) params_file_);
+    svs_vi_->ReadParams((char *) params_file_.c_str());
 
     VC_LOG(INFO, "Setting camera parameters");
 
@@ -128,9 +122,4 @@ void CameraParameters::Init()
     right_P_[2][1] = svs_sp_->right.proj[2][1];
     right_P_[2][2] = svs_sp_->right.proj[2][2];
     right_P_[2][3] = svs_sp_->right.proj[2][3];
-}
-
-void CameraParameters::Close()
-{
-
 }
