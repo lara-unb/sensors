@@ -1,0 +1,5 @@
+<launch>
+  <node name="videre_camera" pkg="videre_camera" type="videre_camera" />
+  <node name="stereo_image_proc" ns="/videre_camera" pkg="stereo_image_proc" type="stereo_image_proc"/>
+  <node name="stereo_view" args="stereo:=/videre_camera image:=image_rect_color" pkg="image_view" type="stereo_view" />
+</launch>

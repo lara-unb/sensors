@@ -25,6 +25,7 @@
 
 #include <cv_bridge/cv_bridge.h>
 #include <image_transport/image_transport.h>
+#include <sensor_msgs/CameraInfo.h>
 #include <sensor_msgs/image_encodings.h>
 
 VidereCamera* vc;
@@ -48,16 +49,49 @@ int main(int argc, char **argv)
 
     // image_transport deals with image topics
     image_transport::ImageTransport it(vc_nh);
-    image_transport::Publisher pub_left = it.advertise("videre_camera/left/image_rect_color", 1);
-    image_transport::Publisher pub_right = it.advertise("videre_camera/right/image_rect_color", 1);
+    image_transport::Publisher pub_left = it.advertise("videre_camera/left/image_raw", 1);
+    image_transport::Publisher pub_right = it.advertise("videre_camera/right/image_raw", 1);
 
     // cv_bridge deals with conversion between cv::Mat and sensor_msgs::Image
     cv_bridge::CvImage msg_left;
     cv_bridge::CvImage msg_right;
 
+    // regular publishers for camera info topics
+    ros::Publisher pub_info_left = vc_nh.advertise<sensor_msgs::CameraInfo>("videre_camera/left/camera_info", 1);
+    ros::Publisher pub_info_right = vc_nh.advertise<sensor_msgs::CameraInfo>("videre_camera/right/camera_info", 1);
+
+    // camera info messages
+    sensor_msgs::CameraInfo info_left;
+    sensor_msgs::CameraInfo info_right;
+
     // We can set encoding prior to loop because it doesn't change
-    msg_left.encoding = sensor_msgs::image_encodings::TYPE_8UC3;
-    msg_right.encoding = sensor_msgs::image_encodings::TYPE_8UC3;
+    msg_left.encoding = sensor_msgs::image_encodings::BGR8;
+    msg_right.encoding = sensor_msgs::image_encodings::BGR8;
+
+    // We can set camera info params prior to loop because they don't change
+    info_left.height = vc->cp()->height();
+    info_left.width = vc->cp()->width();
+    info_left.distortion_model = vc->cp()->distortion_model();
+    vc->cp()->left_D(info_left.D);
+    vc->cp()->left_K(info_left.K);
+    vc->cp()->left_R(info_left.R);
+    vc->cp()->left_P(info_left.P);
+
+    info_right.height = vc->cp()->height();
+    info_right.width = vc->cp()->width();
+    info_right.distortion_model = vc->cp()->distortion_model();
+    vc->cp()->right_D(info_right.D);
+    vc->cp()->right_K(info_right.K);
+    vc->cp()->right_R(info_right.R);
+    vc->cp()->right_P(info_right.P);
+
+    // Set frame_ids
+    msg_left.header.frame_id = "camera_left";
+    msg_right.header.frame_id = "camera_left";
+    info_left.header.frame_id = "camera_left";
+    info_right.header.frame_id = "camera_left";
+
+    // TO DO: USE CAMERAINFO_MANAGER
 
     ros::Rate loop_rate(15);
 
@@ -87,6 +121,14 @@ int main(int argc, char **argv)
         // Publish images
         pub_left.publish(msg_left.toImageMsg());
         pub_right.publish(msg_right.toImageMsg());
+
+        // Set camera info timestamps
+        info_left.header.stamp = ts;
+        info_right.header.stamp = ts;
+
+        // Publish camera info
+        pub_info_left.publish(info_left);
+        pub_info_right.publish(info_right);
 
         ros::spinOnce();
         loop_rate.sleep();

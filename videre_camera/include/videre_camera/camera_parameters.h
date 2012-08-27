@@ -19,14 +19,18 @@
 
 // Standard C/C++ libraries
 #include <string>
+#include <vector>
 
 // OpenCV library
 #include <svsclass.h>
 
+// Boost Array
+#include <boost/array.hpp>
+
 class CameraParameters
 {
     public:
-        CameraParameters(svsVideoImages* svs_vi, const char* params_file = "cfg/calibration.ini", int width = 320, int height = 240) :
+        CameraParameters(svsVideoImages* svs_vi, const char* params_file = "cfg/calibration.svs", int width = 320, int height = 240) :
             svs_vi_(svs_vi), params_file_(params_file), height_(height), width_(width)
         {
             Init();
@@ -84,6 +88,52 @@ class CameraParameters
             for(int ii = 0; ii < 3; ii++)
                 for(int jj = 0; jj < 4; jj++)
                     P[ii][jj] = right_P_[ii][jj];
+        }
+
+        // Accessor function versions for ROS
+        inline void left_D(std::vector<double>& D)
+        {
+            D.insert(D.begin(), left_D_, left_D_+5);
+        }
+        inline void left_K(boost::array<double,9>& K)
+        {
+            for(int ii = 0; ii < 3; ii++)
+                for(int jj = 0; jj < 3; jj++)
+                    K[3*ii+jj] = left_K_[ii][jj];
+        }
+        inline void left_R(boost::array<double,9>& R)
+        {
+            for(int ii = 0; ii < 3; ii++)
+                for(int jj = 0; jj < 3; jj++)
+                    R[3*ii+jj] = left_R_[ii][jj];
+        }
+        inline void left_P(boost::array<double,12>& P)
+        {
+            for(int ii = 0; ii < 3; ii++)
+                for(int jj = 0; jj < 4; jj++)
+                    P[3*ii+jj] = left_P_[ii][jj];
+        }
+        inline void right_D(std::vector<double>& D)
+        {
+            D.insert(D.begin(), right_D_, right_D_+5);
+        }
+        inline void right_K(boost::array<double,9>& K)
+        {
+            for(int ii = 0; ii < 3; ii++)
+                for(int jj = 0; jj < 3; jj++)
+                    K[3*ii+jj] = right_K_[ii][jj];
+        }
+        inline void right_R(boost::array<double,9>& R)
+        {
+            for(int ii = 0; ii < 3; ii++)
+                for(int jj = 0; jj < 3; jj++)
+                    R[3*ii+jj] = right_R_[ii][jj];
+        }
+        inline void right_P(boost::array<double,12>& P)
+        {
+            for(int ii = 0; ii < 3; ii++)
+                for(int jj = 0; jj < 4; jj++)
+                    P[3*ii+jj] = right_P_[ii][jj];
         }
 
     private:

@@ -1,0 +1,9 @@
+<launch>
+  <node name="videre_camera" pkg="videre_camera" type="videre_camera" />
+  <node name="cameracalibrator" pkg="camera_calibration" type="cameracalibrator.py" args="--size 8x6 --square 0.027 --no-service-check">
+    <remap from="left" to="/videre_camera/left/image_raw" />
+    <remap from="right" to="/videre_camera/right/image_raw" />
+    <remap from="left_camera" to="/videre_camera/left" />
+    <remap from="right_camera" to="/videre_camera/right" />
+  </node>
+</launch>

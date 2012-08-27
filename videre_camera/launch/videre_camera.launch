@@ -1,0 +1,3 @@
+<launch>
+  <node name="videre_camera" pkg="videre_camera" type="videre_camera" />
+</launch>

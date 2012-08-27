@@ -70,7 +70,7 @@ bool VidereCamera::InitCapture()
 
     VC_LOG(INFO,"Setting up image rectification");
 
-    bool video_rectified = svs_vi_->SetRect(true);
+    bool video_rectified = svs_vi_->SetRect(false);
     if(!video_rectified)
         VC_LOG(ERROR,"video_object_->SetRect() failed");
 
