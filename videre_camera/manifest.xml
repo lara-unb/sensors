@@ -1,13 +1,12 @@
 <package>
-  <description brief="videre_camera">
-
-     videre_camera
-
+  <description brief="Drivers for Videre Design STH-DCSG-VAR-C">
+    Interface for Videre Design STH-DCSG-VAR-C stereo cameras based on the Small Vision System (SVS) library.
   </description>
   <author>George Brindeiro/georgebrindeiro@lara.unb.br</author>
-  <license>Undefined</license>
-  <review status="unreviewed" notes=""/>
-  <url>http://ros.org/wiki/videre_camera</url>
+  <license>LGPL</license>
+  <review status="experimental" notes="unreviewed"/>
+  <url>http://www.lara.unb.br/wiki/index.php/ROS/unb-ros-pkg/lara_sensors/videre_camera</url>
+  
   <depend package="roscpp"/>
   <depend package="cv_bridge" />
   <depend package="std_msgs"/>
@@ -15,5 +14,4 @@
   <depend package="image_transport"/>
 
   <rosdep name="opencv2.3"/>
-
 </package>

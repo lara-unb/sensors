@@ -1,10 +1,12 @@
 <stack>
-  <description brief="lara_sensors">lara_sensors</description>
-  <author>Maintained by George</author>
-  <license>BSD</license>  
-  <review status="unreviewed" notes=""/>
-  <url>http://ros.org/wiki/lara_sensors</url>
+  <description brief="Drivers for LARA/UnB sensors">
+    Drivers for sensors available at LARA/UnB for which there was no ROS package available.
+  </description>
+  <author>George Brindeiro/georgebrindeiro@lara.unb.br</author>
+  <license>LGPL</license>  
+  <review status="experimental" notes="unreviewed"/>
+  <url>http://www.lara.unb.br/wiki/index.php/ROS/unb-ros-pkg/lara_sensors</url>
+  
   <depend stack="ros" />
   <depend stack="vision_opencv" />
-
 </stack>
