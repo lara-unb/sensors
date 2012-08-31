@@ -3,7 +3,7 @@
     Interface for Videre Design STH-DCSG-VAR-C stereo cameras based on the Small Vision System (SVS) library.
   </description>
   <author>George Brindeiro/georgebrindeiro@lara.unb.br</author>
-  <license>LGPL</license>
+  <license>BSD</license>
   <review status="experimental" notes="unreviewed"/>
   <url>http://www.lara.unb.br/wiki/index.php/ROS/unb-ros-pkg/lara_sensors/videre_camera</url>
   
