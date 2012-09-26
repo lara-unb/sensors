@@ -6,4 +6,5 @@
     <remap from="left_camera" to="/videre_camera/left" />
     <remap from="right_camera" to="/videre_camera/right" />
   </node>
+  <node name="stereo_view" args="stereo:=/videre_camera image:=image_rect_color" pkg="image_view" type="stereo_view" />
 </launch>
