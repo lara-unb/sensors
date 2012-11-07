@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# coding=utf-8
 #
 # Software License Agreement (BSD License)
 #
@@ -32,7 +33,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-def cv_input():
+#def cv_input():
+    # Parse calibration file for svs_output params
 
 def cv_output(width, height, name, d, k, r, p):
     body = (
@@ -96,6 +98,9 @@ def svs_header():
 
     return header
 
+#def svs_input():
+    # Parse calibration file for cv_output params
+
 def svs_output(width, height, name, d, k, r, p):
     body = (
     "[%s camera]" % name + "\n"
@@ -147,9 +152,9 @@ def svs2cv(width, height, d_left, d_right, k_left, k_right, r_left, r_right, p_l
 
 def main():
     in_file = calibration.opencv
-    out_file = calibration-test.svs
+    out_file = calibration.svs
 
-    
+    ## TO DO: finish input parsing functions
 
 import StringIO
 

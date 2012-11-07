@@ -141,7 +141,7 @@ class CameraParameters
         {
             for(int ii = 0; ii < 3; ii++)
                 for(int jj = 0; jj < 4; jj++)
-                    P[3*ii+jj] = left_P_[ii][jj];
+                    P[4*ii+jj] = left_P_[ii][jj];
         }
         inline void right_D(std::vector<double>& D)
         {
@@ -163,7 +163,7 @@ class CameraParameters
         {
             for(int ii = 0; ii < 3; ii++)
                 for(int jj = 0; jj < 4; jj++)
-                    P[3*ii+jj] = right_P_[ii][jj];
+                    P[4*ii+jj] = right_P_[ii][jj];
         }
 
     private:
