@@ -42,6 +42,9 @@
 #include <videre_camera/videre_log.h>
 
 // Standard C/C++ libraries
+#include <fstream>
+#include <iostream>
+#include <sstream>
 #include <string>
 
 // SVS library
@@ -50,9 +53,6 @@
 void CameraParameters::Init()
 {
     VC_LOG(INFO, "Initializing Camera Parameters");
-    VC_LOG(INFO, "Reading camera parameters from %s", params_file_.c_str());
-
-    svs_vi_->ReadParams((char *) params_file_.c_str());
 
     VC_LOG(INFO, "Setting camera parameters");
 
@@ -62,94 +62,273 @@ void CameraParameters::Init()
     svs_vi_->SetBrightness(0, 30);
     svs_vi_->SetRate(30);
 
-    VC_LOG(INFO, "Loading camera parameters");
-
-    svs_sp_ = svs_vi_->GetSP();
+    VC_LOG(INFO, "Reading camera calibration from %s", params_file_.c_str());
 
     // Distortion Model
-    // Default is "plumb_bob"
-    distortion_model_ = "plumb_bob";
+	// Default is "plumb_bob"
+	distortion_model_ = "plumb_bob";
 
-    // Distortion Parameters
-    // For "plumb_bob" the 5 parameters are: (k1, k2, t1, t2, k3)
-    left_D_[0] = svs_sp_->left.kappa1;
-    left_D_[1] = svs_sp_->left.kappa2;
-    left_D_[2] = svs_sp_->left.tau1;
-    left_D_[3] = svs_sp_->left.tau2;
-    left_D_[4] = svs_sp_->left.kappa3;
+    // Get string corresponding to calibration file
+    if(get_calibration_string())
+    {
+    	std::string calibration_format = params_file_.substr(params_file_.find_last_of(".") + 1);
 
-    right_D_[0] = svs_sp_->right.kappa1;
-    right_D_[1] = svs_sp_->right.kappa2;
-    right_D_[2] = svs_sp_->right.tau1;
-    right_D_[3] = svs_sp_->right.tau2;
-    right_D_[4] = svs_sp_->right.kappa3;
+    	extractParams(calibration_format);
+    }
+    else
+    {
+    	VC_LOG(ERROR, "Could not get calibration string");
+    }
+}
 
-    // Intrinsic Parameters (for the raw distorted images)
-    left_K_[0][0] = svs_sp_->left.f;
-    left_K_[0][1] = 0;
-    left_K_[0][2] = svs_sp_->left.Cx;
-    left_K_[1][0] = 0;
-    left_K_[1][1] = svs_sp_->left.fy;
-    left_K_[1][2] = svs_sp_->left.Cy;
-    left_K_[2][0] = 0;
-    left_K_[2][1] = 0;
-    left_K_[2][2] = 1;
+bool CameraParameters::get_calibration_string()
+{
+	std::ifstream t;
+	char* buffer;
+	int length;
 
-    right_K_[0][0] = svs_sp_->right.f;
-    right_K_[0][1] = 0;
-    right_K_[0][2] = svs_sp_->right.Cx;
-    right_K_[1][0] = 0;
-    right_K_[1][1] = svs_sp_->right.fy;
-    right_K_[1][2] = svs_sp_->right.Cy;
-    right_K_[2][0] = 0;
-    right_K_[2][1] = 0;
-    right_K_[2][2] = 1;
+	t.open(params_file_.c_str()); // open input file
+	t.seekg(0, std::ios::end);    // go to the end
+	length = t.tellg();           // report location (this is the length)
+	t.seekg(0, std::ios::beg);    // go back to the beginning
+	buffer = new char[length];    // allocate memory for a buffer of appropriate dimension
+	t.read(buffer, length);       // read the whole file into the buffer
+	t.close();                    // close file handle
 
-    // Rectification Parameters
-    left_R_[0][0] = svs_sp_->left.rect[0][0];
-    left_R_[0][1] = svs_sp_->left.rect[0][1];
-    left_R_[0][2] = svs_sp_->left.rect[0][2];
-    left_R_[1][0] = svs_sp_->left.rect[1][0];
-    left_R_[1][1] = svs_sp_->left.rect[1][1];
-    left_R_[1][2] = svs_sp_->left.rect[1][2];
-    left_R_[2][0] = svs_sp_->left.rect[2][0];
-    left_R_[2][1] = svs_sp_->left.rect[2][1];
-    left_R_[2][2] = svs_sp_->left.rect[2][2];
+	params_string_.assign(buffer);
 
-    right_R_[0][0] = svs_sp_->right.rect[0][0];
-    right_R_[0][1] = svs_sp_->right.rect[0][1];
-    right_R_[0][2] = svs_sp_->right.rect[0][2];
-    right_R_[1][0] = svs_sp_->right.rect[1][0];
-    right_R_[1][1] = svs_sp_->right.rect[1][1];
-    right_R_[1][2] = svs_sp_->right.rect[1][2];
-    right_R_[2][0] = svs_sp_->right.rect[2][0];
-    right_R_[2][1] = svs_sp_->right.rect[2][1];
-    right_R_[2][2] = svs_sp_->right.rect[2][2];
+	VC_LOG(INFO, "Read parameters string");
+	std::cout << params_string_;
 
-    // Projection Parameters (Instrinsics for the rectified images)
-    left_P_[0][0] = svs_sp_->left.proj[0][0];
-    left_P_[0][1] = svs_sp_->left.proj[0][1];
-    left_P_[0][2] = svs_sp_->left.proj[0][2];
-    left_P_[0][3] = svs_sp_->left.proj[0][3];
-    left_P_[1][0] = svs_sp_->left.proj[1][0];
-    left_P_[1][1] = svs_sp_->left.proj[1][1];
-    left_P_[1][2] = svs_sp_->left.proj[1][2];
-    left_P_[1][3] = svs_sp_->left.proj[1][3];
-    left_P_[2][0] = svs_sp_->left.proj[2][0];
-    left_P_[2][1] = svs_sp_->left.proj[2][1];
-    left_P_[2][2] = svs_sp_->left.proj[2][2];
-    left_P_[2][3] = svs_sp_->left.proj[2][3];
+	return true;
+}
 
-    right_P_[0][0] = svs_sp_->right.proj[0][0];
-    right_P_[0][1] = svs_sp_->right.proj[0][1];
-    right_P_[0][2] = svs_sp_->right.proj[0][2];
-    right_P_[0][3] = svs_sp_->right.proj[0][3];
-    right_P_[1][0] = svs_sp_->right.proj[1][0];
-    right_P_[1][1] = svs_sp_->right.proj[1][1];
-    right_P_[1][2] = svs_sp_->right.proj[1][2];
-    right_P_[1][3] = svs_sp_->right.proj[1][3];
-    right_P_[2][0] = svs_sp_->right.proj[2][0];
-    right_P_[2][1] = svs_sp_->right.proj[2][1];
-    right_P_[2][2] = svs_sp_->right.proj[2][2];
-    right_P_[2][3] = svs_sp_->right.proj[2][3];
+template <class T>
+void extract(std::string& data, std::string section, std::string param, T& t)
+{
+    size_t found = data.find(section);
+
+    if (found != std::string::npos)
+    {
+        found = data.find(param,found);
+
+        if (found != std::string::npos)
+        {
+            std::istringstream iss(data.substr(found+param.length()));
+            iss >> t;
+        }
+    }
+    else
+    	VC_LOG(ERROR, "Extract1 could not find %s", section.c_str());
+}
+
+void extract(std::string& data, std::string section,
+             std::string param, double *m, int n)
+{
+    size_t found = data.find(section);
+
+    if (found != std::string::npos)
+    {
+        found = data.find(param,found);
+
+        if (found != std::string::npos)
+        {
+            std::istringstream iss(data.substr(found + param.length()));
+            double v;
+
+            for (int i = 0; i < n; ++i)
+            {
+                iss >> v;
+                m[i] = v;
+            }
+        }
+    }
+    else
+    	VC_LOG(ERROR, "Extract2 could not find %s", section.c_str());
+}
+
+void CameraParameters::parseCalibrationSVS(std::string params, stereo_side_t stereo_side)
+{
+	std::string side;
+
+    switch (stereo_side)
+    {
+        case SIDE_LEFT:
+        {
+        	side = "left";
+
+            // K - original camera matrix
+            extract(params, "[" + side + " camera]", "f ", left_K_[0][0]);
+            extract(params, "[" + side + " camera]", "fy", left_K_[1][1]);
+            extract(params, "[" + side + " camera]", "Cx", left_K_[0][2]);
+            extract(params, "[" + side + " camera]", "Cy", left_K_[1][2]);
+
+			left_K_[0][1] = left_K_[1][0] = left_K_[2][0] = left_K_[2][1] = 0.0;
+            left_K_[2][2] = 1.0;
+
+            // D - distortion params
+            extract(params, "[" + side + " camera]", "kappa1", left_D_[0]);
+            extract(params, "[" + side + " camera]", "kappa2", left_D_[1]);
+            extract(params, "[" + side + " camera]", "tau1", left_D_[2]);
+            extract(params, "[" + side + " camera]", "tau2", left_D_[3]);
+            extract(params, "[" + side + " camera]", "kappa3", left_D_[4]);
+
+            // R - rectification matrix
+            extract(params, "[" + side + " camera]", "rect", &left_R_[0][0], 9);
+
+            // P - projection matrix
+            extract(params, "[" + side + " camera]", "proj", &left_P_[0][0], 12);
+            left_P_[0][3] *= .001;  // convert from mm to m
+
+            break;
+        }
+
+        case SIDE_RIGHT:
+        {
+        	side = "right";
+
+            // K - original camera matrix
+            extract(params, "[" + side + " camera]", "f ", right_K_[0][0]);
+            extract(params, "[" + side + " camera]", "fy", right_K_[1][1]);
+            extract(params, "[" + side + " camera]", "Cx", right_K_[0][2]);
+            extract(params, "[" + side + " camera]", "Cy", right_K_[1][2]);
+
+			right_K_[0][1] = right_K_[1][0] = right_K_[2][0] = right_K_[2][1] = 0.0;
+            right_K_[2][2] = 1.0;
+
+            // D - distortion params
+            extract(params, "[" + side + " camera]", "kappa1", right_D_[0]);
+            extract(params, "[" + side + " camera]", "kappa2", right_D_[1]);
+            extract(params, "[" + side + " camera]", "tau1", right_D_[2]);
+            extract(params, "[" + side + " camera]", "tau2", right_D_[3]);
+            extract(params, "[" + side + " camera]", "kappa3", right_D_[4]);
+
+            // R - rectification matrix
+            extract(params, "[" + side + " camera]", "rect", &right_R_[0][0], 9);
+
+            // P - projection matrix
+            extract(params, "[" + side + " camera]", "proj", &right_P_[0][0], 12);
+            right_P_[0][3] *= .001;  // convert from mm to m
+
+            break;
+        }
+    }
+}
+
+void CameraParameters::parseCalibrationOST(std::string params, stereo_side_t stereo_side)
+{
+    std::string side;
+
+    switch (stereo_side)
+    {
+        case SIDE_LEFT:
+        {
+        	side = "left";
+
+            // K - original camera matrix
+            extract(params, "[narrow_stereo/" + side + "]", "camera matrix", &left_K_[0][0], 9);
+
+            // D - distortion params
+            extract(params, "[narrow_stereo/" + side + "]", "distortion", &left_D_[0], 5);
+
+            // R - rectification matrix
+            extract(params, "[narrow_stereo/" + side + "]", "rectification", &left_R_[0][0], 9);
+
+            // P - projection matrix
+            extract(params, "[narrow_stereo/" + side + "]", "projection", &left_P_[0][0], 12);
+
+            break;
+        }
+
+        case SIDE_RIGHT:
+        {
+        	side = "right";
+
+            // K - original camera matrix
+            extract(params, "[narrow_stereo/" + side + "]", "camera matrix", &right_K_[0][0], 9);
+
+            // D - distortion params
+            extract(params, "[narrow_stereo/" + side + "]", "distortion", &right_D_[0], 5);
+
+            // R - rectification matrix
+            extract(params, "[narrow_stereo/" + side + "]", "rectification", &right_R_[0][0], 9);
+
+            // P - projection matrix
+            extract(params, "[narrow_stereo/" + side + "]", "projection", &right_P_[0][0], 12);
+
+            break;
+        }
+    }
+}
+
+//
+// gets params from a string
+// "SVS"-type parameter strings use mm for the projection matrices, convert to m
+// "OST"-type parameter strings use m for projection matrices
+//
+void CameraParameters::extractParams(std::string calibration_format)
+{
+    //printf("\n\n[extractParams] Parameters:\n\n");
+
+    // Initialize Translation parameters
+    /*for (int i = 0; i < 3; ++i)
+    {
+        T[i] = 0.0;
+    }*/
+
+    // Initialize Rotation parameters
+    /*for (int i = 0; i < 3; ++i)
+    {
+        Om[i] = 0.0;
+    }*/
+
+    if(calibration_format == "svs") // SVS-type parameters
+    {
+        //printf("[dcam] SVS-type parameters\n");
+
+        // Left camera calibration parameters
+        parseCalibrationSVS(params_string_, SIDE_LEFT);
+
+        // Right camera calibration parameters
+        parseCalibrationSVS(params_string_, SIDE_RIGHT);
+
+        // external params of undistorted cameras
+        //extract(params, "[external]", "Tx", T[0]);
+        //extract(params, "[external]", "Ty", T[1]);
+        //extract(params, "[external]", "Tz", T[2]);
+        //extract(params, "[external]", "Rx", Om[0]);
+        //extract(params, "[external]", "Ry", Om[1]);
+        //extract(params, "[external]", "Rz", Om[2]);
+
+        //T[0] *= .001;
+        //T[1] *= .001;
+        //T[2] *= .001;
+    }
+    else if(calibration_format == "opencv") // OST-type parameters
+    {
+        //printf("[dcam] OST-type parameters\n");
+
+        // Left camera calibration parameters
+        parseCalibrationOST(params_string_, SIDE_LEFT);
+
+        // Right camera calibration parameters
+        parseCalibrationOST(params_string_, SIDE_RIGHT);
+
+        // external params of undistorted cameras
+        //extract(params, "[externals]", "translation", T, 3);
+        //extract(params, "[externals]", "rotation", Om, 3);
+    }
+
+    // disparity resolution
+    //extract(params, "[stereo]", "dpp", dpp);
+    //extract(params, "[stereo]", "corrxsize", corrSize);
+    //extract(params, "[stereo]", "convx", filterSize);
+    //extract(params, "[stereo]", "ndisp", numDisp);
+
+    // check for left camera matrix
+    //if (left_info.K[0] == 0.0) { hasRectification = false; }
+    //else { hasRectification = true; }
+
+    // check for right camera matrix
+    //if (right_info.K[0] == 0.0) { hasRectification = false; }
 }

@@ -57,10 +57,16 @@
 // Boost Array
 #include <boost/array.hpp>
 
+typedef enum
+{
+    SIDE_LEFT = 0,
+    SIDE_RIGHT
+} stereo_side_t;
+
 class CameraParameters
 {
     public:
-        CameraParameters(svsVideoImages* svs_vi, const char* params_file = "cfg/calibration.svs", int width = 320, int height = 240) :
+        CameraParameters(svsVideoImages* svs_vi, const char* params_file = "cfg/calibration.opencv", int width = 320, int height = 240) :
             svs_vi_(svs_vi), params_file_(params_file), height_(height), width_(width)
         {
             Init();
@@ -171,6 +177,7 @@ class CameraParameters
         svsSP* svs_sp_;
 
         const std::string params_file_;
+        std::string params_string_;
 
         int height_;
         int width_;
@@ -188,6 +195,11 @@ class CameraParameters
         double right_P_[3][4];
 
         void Init();
+
+        bool get_calibration_string();
+        void parseCalibrationSVS(std::string params, stereo_side_t stereo_side);
+        void parseCalibrationOST(std::string params, stereo_side_t stereo_side);
+        void extractParams(std::string calibration_format);
 };
 
 #endif //CAMERA_PARAMETERS_H
