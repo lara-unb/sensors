@@ -66,7 +66,7 @@ typedef enum
 class CameraParameters
 {
     public:
-        CameraParameters(svsVideoImages* svs_vi, const char* params_file = "cfg/calibration.opencv", int width = 320, int height = 240) :
+        CameraParameters(svsVideoImages* svs_vi, const char* params_file = "cfg/calibration.opencv", int width = 640, int height = 480) :
             svs_vi_(svs_vi), params_file_(params_file), height_(height), width_(width)
         {
             Init();

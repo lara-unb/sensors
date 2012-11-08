@@ -58,7 +58,7 @@
 class StereoData
 {
     public:
-        StereoData(svsVideoImages* svs_vi, int width = 320, int height = 240, double gamma = 0.850)
+        StereoData(svsVideoImages* svs_vi, int width = 640, int height = 480, double gamma = 0.850)
         {
             svs_vi_ = svs_vi;
             width_ = width;
@@ -74,7 +74,6 @@ class StereoData
 
         inline const cv::Mat& cv_left(){ return cv_left_; }
         inline const cv::Mat& cv_right(){ return cv_right_; }
-        inline const cv::Mat& cv_disp(){ return cv_disp_; }
 
     private:
         svsVideoImages* svs_vi_;
@@ -83,11 +82,9 @@ class StereoData
 
         unsigned long* svs_left_;
         unsigned long* svs_right_;
-        short* svs_disp_;
 
         cv::Mat cv_left_;
         cv::Mat cv_right_;
-        cv::Mat cv_disp_;
 
         int height_;
         int width_;
@@ -101,7 +98,6 @@ class StereoData
 
         // Utility functions
         void SVStoCV(unsigned long* svs_image, cv::Mat& cv_image);
-        void SVStoCVDisp(short* svs_image, cv::Mat& cv_image);
         void PrintSVSInfo();
         void PrintCVInfo(cv::Mat& cv_image);
 };

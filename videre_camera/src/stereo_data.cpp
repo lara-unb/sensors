@@ -60,7 +60,6 @@ void StereoData::Init()
 
     cv_left_.create(height_, width_, CV_8UC3);
     cv_right_.create(height_, width_, CV_8UC3);
-    cv_disp_.create(height_, width_, CV_16SC1);
 
     svs_sp_ = new svsStereoProcess();
 }
@@ -96,11 +95,9 @@ bool StereoData::GetData(svsStereoImage* svs_si)
 
         svs_left_ = svs_si_->Color();
         svs_right_ = svs_si_->ColorRight();
-        svs_disp_ = svs_si_->Disparity();
 
         SVStoCV(svs_left_, cv_left_);
         SVStoCV(svs_right_, cv_right_);
-        SVStoCVDisp(svs_disp_, cv_disp_);
 
         return true;
     }
@@ -135,33 +132,6 @@ void StereoData::SVStoCV(unsigned long* svs_image, cv::Mat& cv_image)
             cv_line[jj * 3 + 0] = gamma_table_[svs_pixel[2]];
             cv_line[jj * 3 + 1] = gamma_table_[svs_pixel[1]];
             cv_line[jj * 3 + 2] = gamma_table_[svs_pixel[0]];
-        }
-    }
-}
-
-void StereoData::SVStoCVDisp(short* svs_image, cv::Mat& cv_image)
-{
-    if(cv_image.rows != height_)
-        cv_image.rows = height_;
-
-    if(cv_image.cols != width_)
-        cv_image.cols = width_;
-
-    int nl = cv_image.rows;
-    int nc = cv_image.cols;
-
-    short svs_disp;
-    short* cv_line;
-
-    for(long ii = 0; ii < nl; ii++)
-    {
-        cv_line = cv_image.ptr<short>(ii);
-
-        for(long jj = 0; jj < nc; jj++)
-        {
-            svs_disp = (svs_image + width_*ii)[jj];
-
-            cv_line[jj] = svs_disp; //static_cast<int>((static_cast<double>(jj)/nc)*32767*2 - 32767);
         }
     }
 }

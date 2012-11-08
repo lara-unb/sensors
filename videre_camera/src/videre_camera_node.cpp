@@ -66,9 +66,12 @@ int main(int argc, char **argv)
     setup_sig_handler();
 
     // Initialize CV images
-    cv::Mat left_image(240, 320, CV_8UC3);
-    cv::Mat right_image(240, 320, CV_8UC3);
-    cv::Mat disp_image(240, 320, CV_16SC3);
+    int width = 480;
+    int height = 640;
+
+    cv::Mat left_image(height, width, CV_8UC3);
+    cv::Mat right_image(height, width, CV_8UC3);
+    cv::Mat disp_image(height, width, CV_16SC3);
 
     // Create VidereCamera object
     vc = new VidereCamera(true);
@@ -97,9 +100,6 @@ int main(int argc, char **argv)
     // We can set encoding prior to loop because it doesn't change
     msg_left.encoding = sensor_msgs::image_encodings::BGR8;
     msg_right.encoding = sensor_msgs::image_encodings::BGR8;
-
-    // Warning that we are testing
-    ROS_INFO("Hard-coded calibration in videre_camera_node");
 
     // We can set camera info params prior to loop because they don't change
     info_left.height = vc->cp()->height();

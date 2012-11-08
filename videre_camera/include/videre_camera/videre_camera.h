@@ -70,7 +70,7 @@
 class VidereCamera
 {
     public:
-        VidereCamera(bool display = false, int width = 320, int height = 240, int timeout = 5000)
+        VidereCamera(bool display = false, int width = 640, int height = 480, int timeout = 5000)
         {
             printf("[VidereCamera]\n");
 

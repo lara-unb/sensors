@@ -60,7 +60,7 @@ class ImageDisplay
         ~ImageDisplay();
 
         void Init();
-        void Display(const cv::Mat& left_image, const cv::Mat& right_image, const cv::Mat& disp_image);
+        void Display(const cv::Mat& left_image, const cv::Mat& right_image);
         void Close();
 
     private:

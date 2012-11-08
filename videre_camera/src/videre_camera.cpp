@@ -125,7 +125,7 @@ bool VidereCamera::GetData()
     bool got_image = sd_->GetData(svs_si);
 
     if(display_)
-        id_->Display(sd_->cv_left(), sd_->cv_right(), sd_->cv_disp());
+        id_->Display(sd_->cv_left(), sd_->cv_right());
 
     //VC_LOG(INFO,"Image Count = %d", count_++);
 
