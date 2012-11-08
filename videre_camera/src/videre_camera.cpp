@@ -96,7 +96,7 @@ bool VidereCamera::InitCapture()
 
     VC_LOG(INFO,"Found %i cameras", svs_vi_->Enumerate());
 
-    cp_ = new CameraParameters(svs_vi_);
+    cp_ = new CameraParameters(svs_vi_, "/home/george/git/slam/lara_sensors/videre_camera/cfg/robocop.opencv");
 
     VC_LOG(INFO,"Setting up image rectification");
 

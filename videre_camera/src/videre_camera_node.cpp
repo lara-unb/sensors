@@ -119,10 +119,10 @@ int main(int argc, char **argv)
     vc->cp()->right_P(info_right.P);
 
     // Set frame_ids
-    msg_left.header.frame_id = "camera_left";
-    msg_right.header.frame_id = "camera_left";
-    info_left.header.frame_id = "camera_left";
-    info_right.header.frame_id = "camera_left";
+    msg_left.header.frame_id = "/videre_camera/left";
+    msg_right.header.frame_id = "/videre_camera/left";
+    info_left.header.frame_id = "/videre_camera/left";
+    info_right.header.frame_id = "/videre_camera/left";
 
     // TO DO: USE CAMERAINFO_MANAGER
 
