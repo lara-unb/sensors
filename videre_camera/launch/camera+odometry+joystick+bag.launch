@@ -1,0 +1,10 @@
+<launch>
+  <node name="videre_camera" pkg="videre_camera" type="videre_camera" />
+
+	<node name="p2os_motion" pkg="p2os_driver" type="p2os"/>
+    
+	<node name="joystick" pkg="joy" type="joy_node"/>
+	<node name="p2os_teleoperation" pkg="p2os_teleop" type="p2os_teleop"/>
+
+    <node name="record" pkg="rosbag" type="record" output="screen" args="videre_camera/left/camera_info videre_camera/right/camera_info videre_camera/left/image_raw videre_camera/left/image_raw pose rosout rosout_agg tf motor_state"/>
+</launch>
