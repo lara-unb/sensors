@@ -74,7 +74,7 @@ int main(int argc, char **argv)
     cv::Mat disp_image(height, width, CV_16SC3);
 
     // Create VidereCamera object
-    vc = new VidereCamera(true);
+    vc = new VidereCamera();
 
     // Setup ROS structures
     ros::init(argc, argv, "videre_camera_node", ros::init_options::AnonymousName);
