@@ -1,4 +1,4 @@
 sensors
 =======
 
-Sensor drivers
+Drivers for LARA sensors
